@@ -1,0 +1,17 @@
+{
+  "quests.dev.book": "Dev Quest Book",
+  "quests.dev.group.start": "Getting Started",
+  "quests.dev.group.tools": "Basic Tools",
+  "quests.dev.intro.welcome.title": "Welcome",
+  "quests.dev.intro.welcome.subtitle": "Open the quest book",
+  "quests.dev.intro.welcome.desc": "This is a local dev fixture for ftb-quest-export.",
+  "quests.dev.intro.welcome.task": "Acknowledge the quest book",
+  "quests.dev.intro.stone.title": "Gather Stone",
+  "quests.dev.intro.stone.subtitle": "Mine some cobblestone",
+  "quests.dev.intro.stone.task": "Collect cobblestone",
+  "quests.dev.intro.iron.title": "Iron Age",
+  "quests.dev.intro.iron.task": "Ready for metal tools",
+  "quests.dev.tools.pickaxe.title": "Craft a Pickaxe",
+  "quests.dev.tools.pickaxe.desc": "Make a wooden pickaxe to continue.",
+  "quests.dev.tools.pickaxe.task": "Craft a wooden pickaxe"
+}

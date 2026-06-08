@@ -1,0 +1,48 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "tools"
+	group: ""
+	icon: {
+		Count: 1
+		id: "minecraft:wooden_pickaxe"
+		tag: {
+			Damage: 0
+		}
+	}
+	id: "7044E63C50E7BD25"
+	order_index: 1
+	quest_links: [{
+		id: "2EB77CD277B40902"
+		linked_quest: "0123456789ABCDEF"
+		x: -2.0d
+		y: 1.0d
+	}]
+	quests: [{
+		dependencies: ["0123456789ABCDEF"]
+		description: ["{quests.dev.tools.pickaxe.desc}"]
+		icon: {
+			Count: 1
+			id: "minecraft:wooden_pickaxe"
+			tag: {
+				Damage: 0
+			}
+		}
+		id: "36DAB7EE7D9D4A86"
+		tasks: [{
+			id: "7DF1BBA6CDDF2F4E"
+			item: {
+				Count: 1
+				id: "minecraft:wooden_pickaxe"
+				tag: {
+					Damage: 0
+				}
+			}
+			title: "{quests.dev.tools.pickaxe.task}"
+			type: "item"
+		}]
+		title: "{quests.dev.tools.pickaxe.title}"
+		x: 0.0d
+		y: 0.0d
+	}]
+}

@@ -1,0 +1,66 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "intro"
+	group: ""
+	icon: "minecraft:grass_block"
+	id: "3034AD801A426E7C"
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			description: ["{quests.dev.intro.welcome.desc}"]
+			icon: "minecraft:book"
+			id: "121074CB3DB0837D"
+			size: 1.0d
+			subtitle: "{quests.dev.intro.welcome.subtitle}"
+			tasks: [{
+				id: "2BBBF3A25D4FBEAA"
+				title: "{quests.dev.intro.welcome.task}"
+				type: "checkmark"
+			}]
+			title: "{quests.dev.intro.welcome.title}"
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			icon: "minecraft:cobblestone"
+			id: "2041589F1ED09FA1"
+			size: 1.0d
+			subtitle: "{quests.dev.intro.stone.subtitle}"
+			tasks: [{
+				id: "648F631BC3207B19"
+				item: "minecraft:cobblestone"
+				title: "{quests.dev.intro.stone.task}"
+				type: "item"
+			}]
+			title: "{quests.dev.intro.stone.title}"
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			icon: {
+				Count: 1
+				id: "minecraft:iron_pickaxe"
+				tag: {
+					Damage: 0
+				}
+			}
+			id: "0123456789ABCDEF"
+			rewards: [{
+				id: "0DAA9A2950D63756"
+				title: "XP"
+				type: "xp"
+				xp: 100
+			}]
+			tasks: [{
+				id: "3ADED6A83E40AA4E"
+				title: "{quests.dev.intro.iron.task}"
+				type: "checkmark"
+			}]
+			title: "{quests.dev.intro.iron.title}"
+			x: 4.0d
+			y: 0.0d
+		}
+	]
+}

@@ -1,0 +1,17 @@
+{
+  "quests.dev.book": "开发用任务书",
+  "quests.dev.group.start": "入门",
+  "quests.dev.group.tools": "基础工具",
+  "quests.dev.intro.welcome.title": "欢迎",
+  "quests.dev.intro.welcome.subtitle": "打开任务书",
+  "quests.dev.intro.welcome.desc": "这是 ftb-quest-export 的本地开发测试任务书。",
+  "quests.dev.intro.welcome.task": "确认已阅读任务",
+  "quests.dev.intro.stone.title": "收集石头",
+  "quests.dev.intro.stone.subtitle": "挖一些圆石",
+  "quests.dev.intro.stone.task": "收集圆石",
+  "quests.dev.intro.iron.title": "铁器时代",
+  "quests.dev.intro.iron.task": "准备进入金属工具阶段",
+  "quests.dev.tools.pickaxe.title": "制作镐",
+  "quests.dev.tools.pickaxe.desc": "制作一把木镐以继续。",
+  "quests.dev.tools.pickaxe.task": "制作木镐"
+}

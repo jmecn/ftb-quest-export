@@ -1,0 +1,6 @@
+{
+	chapter_groups: [
+		{ id: "0094CBDBF6CE95E3", title: "{quests.dev.group.start}" }
+		{ id: "58A6528167E799E5", title: "{quests.dev.group.tools}" }
+	]
+}

@@ -1,0 +1,143 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev.legacyforge'
+    id 'maven-publish'
+}
+
+group = group_id
+version = mod_version
+
+base {
+    archivesName = archives_name
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'MinecraftForge'
+        url = 'https://maven.minecraftforge.net'
+    }
+    maven {
+        name = 'FTB'
+        url = 'https://maven.ftb.dev/releases'
+        content { includeGroup 'dev.ftb.mods' }
+    }
+    maven {
+        name = 'Architectury'
+        url = 'https://maven.architectury.dev/'
+        content { includeGroup 'dev.architectury' }
+    }
+    maven {
+        name = 'GitHubPackagesMinecraftWebExport'
+        url = uri("https://maven.pkg.github.com/jmecn/minecraft-web-export")
+        credentials {
+            username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
+            password = findProperty('gpr.key') ?: System.getenv('GITHUB_TOKEN')
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.13.1'
+
+    modCompileOnly "io.github.jmecn:minecraft-web-export:${mwe_version}"
+    modRuntimeOnly "io.github.jmecn:minecraft-web-export:${mwe_version}"
+
+    modCompileOnly "dev.ftb.mods:ftb-library-forge:${ftb_library_version}"
+    modRuntimeOnly "dev.ftb.mods:ftb-library-forge:${ftb_library_version}"
+
+    modCompileOnly "dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"
+    modRuntimeOnly "dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"
+
+    modRuntimeOnly "dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}"
+    modRuntimeOnly "dev.architectury:architectury-forge:${architectury_version}"
+}
+
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
+
+    mods {
+        ftb_quest_export {
+            sourceSet sourceSets.main
+        }
+    }
+
+    runs {
+        def exportLangs = 'en_us,zh_cn'
+        configureEach {
+            gameDirectory = project.file('run')
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'INFO'
+        }
+        client {
+            client()
+            systemProperty 'quest.exportLanguages', exportLangs
+        }
+        exportClient {
+            client()
+            ideName = 'Quest Export Client'
+            systemProperty 'quest.export.outputDir', 'build/quest-export'
+            systemProperty 'quest.exportLanguages', exportLangs
+        }
+        exportCiClient {
+            client()
+            ideName = 'Quest Export CI Client'
+            systemProperty 'quest.export.runAndExit', 'true'
+            systemProperty 'quest.export.outputDir', 'build/quest-export'
+            systemProperty 'quest.exportWorldName', 'quest-export'
+            systemProperty 'quest.exportWarmupTicks', '100'
+            systemProperty 'quest.exportWorldDelayTicks', '60'
+            systemProperty 'quest.exportTimeoutSeconds', '7200'
+            systemProperty 'quest.exportLanguages', exportLangs
+        }
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    def resourceProps = [
+            minecraft_version: minecraft_version,
+            mwe_version      : mwe_version,
+            mod_authors      : mod_authors,
+            mod_description  : mod_description,
+            mod_id           : mod_id,
+            mod_license      : mod_license,
+            mod_name         : mod_name,
+            mod_version      : mod_version,
+    ]
+    inputs.properties(resourceProps)
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand(resourceProps)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:deprecation'
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            groupId = group_id
+            artifactId = archives_name
+            version = mod_version
+            artifact(tasks.jar)
+        }
+    }
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri("https://maven.pkg.github.com/jmecn/ftb-quest-export")
+            credentials {
+                username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
+                password = findProperty('gpr.key') ?: System.getenv('GITHUB_TOKEN')
+            }
+        }
+    }
+}

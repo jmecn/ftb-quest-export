@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jmecn.ftbquestexport.export.resources.ExportDirectoryStats;
 import io.github.jmecn.ftbquestexport.export.resources.QuestClosureResourceExporter;
+import io.github.jmecn.ftbquestexport.export.resources.QuestEmiAssetsExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestIconExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
@@ -136,6 +137,13 @@ public final class QuestExportOrchestrator {
 
         if (scan != null) {
             writeMeta(outputDir, scan, resources);
+        }
+
+        try {
+            QuestEmiAssetsExporter.finalizeIconBundle(outputDir);
+        } catch (IOException e) {
+            LOGGER.error("emi assets finalize failed", e);
+            manifest.put("emiAssetsError", e.getClass().getSimpleName() + ": " + e.getMessage());
         }
 
         try {

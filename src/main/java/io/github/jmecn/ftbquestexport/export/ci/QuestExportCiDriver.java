@@ -12,7 +12,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.nio.file.Path;
 
-/** Client tick state machine: menu → void world → warmup → quest export → {@link System#exit}. */
+/** Client tick state machine: menu → void world → warmup → quest export → CI hard exit. */
 public final class QuestExportCiDriver {
 
     private QuestExportCiDriver() {}
@@ -88,14 +88,14 @@ public final class QuestExportCiDriver {
                 FtbQuestExportMod.LOGGER.error(
                         "fatal menu screen ({}); aborting export",
                         client.screen.getClass().getName());
-                System.exit(1);
+                Runtime.getRuntime().halt(1);
                 return;
             }
             if (QuestExportCiProperties.timedOut(startNanos)) {
                 phase = Phase.DONE;
                 FtbQuestExportMod.LOGGER.error("export timed out after {}s (phase={})",
                         QuestExportCiProperties.exportTimeoutSeconds(), phase);
-                System.exit(1);
+                Runtime.getRuntime().halt(1);
                 return;
             }
 
@@ -156,11 +156,12 @@ public final class QuestExportCiDriver {
             FtbQuestExportMod.LOGGER.info("running quest export to {} ...", questDir.toAbsolutePath());
             try {
                 QuestExportOrchestrator.run(questDir);
-                FtbQuestExportMod.LOGGER.info("quest export finished, exiting 0");
-                System.exit(0);
+                FtbQuestExportMod.LOGGER.info("quest export finished, halting JVM");
+                // halt: export is on disk; avoid EMI/TMRV background threads blocking System.exit shutdown.
+                Runtime.getRuntime().halt(0);
             } catch (Exception e) {
                 FtbQuestExportMod.LOGGER.error("quest export failed for {}", questDir.toAbsolutePath(), e);
-                System.exit(1);
+                Runtime.getRuntime().halt(1);
             }
         }
     }

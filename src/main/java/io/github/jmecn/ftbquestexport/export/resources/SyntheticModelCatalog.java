@@ -114,7 +114,7 @@ final class SyntheticModelCatalog {
     private SyntheticModelCatalog() {}
 
     private static void register(String namespace, String path, String json) {
-        MODELS.put(new ResourceLocation(namespace, path), json.strip());
+        MODELS.put(ResourceLocation.fromNamespaceAndPath(namespace, path), json.strip());
     }
 
     static boolean isAvailable(ResourceManager rm, ResourceLocation modelFile) {

@@ -72,7 +72,6 @@ final class ModelDependencyCollector {
         }
         String ref = textureRef;
         if (ref.endsWith(".png") || ref.endsWith(".mcmeta")) {
-            // strip extension for ResourceLocation path under textures/
             if (ref.endsWith(".mcmeta")) {
                 ref = ref.substring(0, ref.length() - ".mcmeta".length());
             } else if (ref.endsWith(".png")) {
@@ -107,5 +106,4 @@ final class ModelDependencyCollector {
             pending.add(modelId);
         }
     }
-
 }

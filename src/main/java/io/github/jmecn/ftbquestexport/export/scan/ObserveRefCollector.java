@@ -1,9 +1,9 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -28,15 +28,15 @@ public final class ObserveRefCollector {
             LOGGER.debug("[observe] skipping unparseable ref: {}", trimmed);
             return;
         }
-        if (BuiltInRegistries.BLOCK.containsKey(loc)) {
+        if (ForgeRegistries.BLOCKS.containsKey(loc)) {
             scan.addBlock(loc.toString());
-            Item blockItem = BuiltInRegistries.BLOCK.get(loc).asItem();
+            Item blockItem = ForgeRegistries.BLOCKS.getValue(loc).asItem();
             if (blockItem != null && blockItem != Items.AIR) {
-                scan.addItem(BuiltInRegistries.ITEM.getKey(blockItem).toString());
+                scan.addItem(ForgeRegistries.ITEMS.getKey(blockItem).toString());
             }
             return;
         }
-        if (BuiltInRegistries.ENTITY_TYPE.containsKey(loc)) {
+        if (ForgeRegistries.ENTITY_TYPES.containsKey(loc)) {
             scan.addEntity(loc.toString());
             return;
         }

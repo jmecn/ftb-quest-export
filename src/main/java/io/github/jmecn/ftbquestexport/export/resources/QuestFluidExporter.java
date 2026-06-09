@@ -3,9 +3,9 @@ package io.github.jmecn.ftbquestexport.export.resources;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -34,7 +34,7 @@ public final class QuestFluidExporter {
             if (loc == null) {
                 continue;
             }
-            Fluid fluid = BuiltInRegistries.FLUID.get(loc);
+            Fluid fluid = ForgeRegistries.FLUIDS.getValue(loc);
             if (fluid == null || fluid.defaultFluidState().isEmpty()) {
                 continue;
             }

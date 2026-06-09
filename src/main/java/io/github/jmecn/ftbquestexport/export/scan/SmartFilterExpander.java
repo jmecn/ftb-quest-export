@@ -1,8 +1,8 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,7 +72,7 @@ public final class SmartFilterExpander {
         if (stack == null || stack.isEmpty()) {
             return List.of();
         }
-        if ("ftbfiltersystem:smart_filter".equals(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())) {
+        if ("ftbfiltersystem:smart_filter".equals(ForgeRegistries.ITEMS.getKey(stack.getItem()).toString())) {
             CompoundTag tag = stack.getTag();
             if (tag != null && tag.contains("ftbfiltersystem:filter")) {
                 String raw = tag.getString("ftbfiltersystem:filter");
@@ -84,7 +84,7 @@ public final class SmartFilterExpander {
                 return List.of();
             }
         }
-        return List.of(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
+        return List.of(ForgeRegistries.ITEMS.getKey(stack.getItem()).toString());
     }
 
     public static String filterRawFromStack(ItemStack stack) {

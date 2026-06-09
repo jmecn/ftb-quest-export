@@ -18,7 +18,6 @@ import java.util.Set;
 /**
  * Walks blockstate / model JSON and enqueues dependent models, parents, and textures
  */
-@SuppressWarnings("removal")
 final class ModelDependencyWalker {
 
     private ModelDependencyWalker() {}
@@ -247,7 +246,7 @@ final class ModelDependencyWalker {
         if (!path.endsWith(".json")) {
             path = path + ".json";
         }
-        return new ResourceLocation(loc.getNamespace(), path);
+        return ResourceLocation.fromNamespaceAndPath(loc.getNamespace(), path);
     }
 
     private static String namespaceForUnqualifiedModelRef(String modelRef, String defaultNamespace) {

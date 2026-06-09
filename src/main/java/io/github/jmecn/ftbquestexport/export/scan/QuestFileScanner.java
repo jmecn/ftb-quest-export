@@ -1,7 +1,5 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
-import dev.ftb.mods.ftblibrary.icon.Icon;
-import dev.ftb.mods.ftblibrary.icon.ItemIcon;
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import dev.ftb.mods.ftbquests.quest.BaseQuestFile;
 import dev.ftb.mods.ftbquests.quest.Chapter;
@@ -17,10 +15,10 @@ import dev.ftb.mods.ftbquests.quest.task.FluidTask;
 import dev.ftb.mods.ftbquests.quest.task.ItemTask;
 import dev.ftb.mods.ftbquests.quest.task.StageTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -80,7 +78,7 @@ public final class QuestFileScanner {
                     ? QuestObjectBase.getCodeString(chapter.getGroup().id)
                     : null);
             summary.put("orderIndex", chapter.getIndex());
-            summary.put("icon", iconToRef(chapter.getIcon(), scan));
+            summary.put("icon", QuestDisplayExport.resolveIconRef(chapter.getIcon(), scan));
             chapterIndex.add(summary);
         }
         index.put("chapters", chapterIndex);
@@ -97,7 +95,7 @@ public final class QuestFileScanner {
         root.put("group", chapter.hasGroup()
                 ? QuestObjectBase.getCodeString(chapter.getGroup().id)
                 : null);
-        root.put("icon", iconToRef(chapter.getIcon(), scan));
+        root.put("icon", QuestDisplayExport.resolveIconRef(chapter.getIcon(), scan));
         root.put("defaultQuestShape", chapter.getDefaultQuestShape());
         root.put("orderIndex", chapter.getIndex());
 
@@ -110,13 +108,21 @@ public final class QuestFileScanner {
 
         List<Map<String, Object>> links = new ArrayList<>();
         for (QuestLink link : chapter.getQuestLinks()) {
+            Quest linked = link.getQuest().orElse(null);
+            if (linked == null) {
+                LOGGER.warn("[scan] skipping quest link {} — linked quest not found", link.id);
+                continue;
+            }
             Map<String, Object> l = new LinkedHashMap<>();
             l.put("id", QuestObjectBase.getCodeString(link.id));
-            l.put("linkedQuest", QuestObjectBase.getCodeString(link.getParentID()));
+            l.put("linkedQuest", QuestObjectBase.getCodeString(linked.id));
             l.put("x", link.getX());
             l.put("y", link.getY());
             if (link.getShape() != null && !link.getShape().isEmpty()) {
                 l.put("shape", link.getShape());
+            }
+            if (link.getWidth() != 1D) {
+                l.put("size", link.getWidth());
             }
             links.add(l);
         }
@@ -125,7 +131,7 @@ public final class QuestFileScanner {
         List<Map<String, Object>> images = new ArrayList<>();
         for (ChapterImage image : chapter.getImages()) {
             Map<String, Object> img = new LinkedHashMap<>();
-            String imageRef = iconToRef(image.getImage(), scan);
+            String imageRef = QuestDisplayExport.resolveIconRef(image.getImage(), scan);
             img.put("image", imageRef != null ? imageRef : image.getImage().toString());
             img.put("x", image.getX());
             img.put("y", image.getY());
@@ -147,23 +153,18 @@ public final class QuestFileScanner {
     private static Map<String, Object> exportQuest(Quest quest, QuestScanResult scan) {
         Map<String, Object> q = new LinkedHashMap<>();
         q.put("id", QuestObjectBase.getCodeString(quest.id));
+        exportQuestVisibilityFlags(quest, q);
         q.put("x", quest.getX());
         q.put("y", quest.getY());
         q.put("size", quest.getSize());
         if (quest.getShape() != null && !quest.getShape().isEmpty()) {
             q.put("shape", quest.getShape());
         }
-        q.put("title", quest.getRawTitle());
+        QuestDisplayExport.applyQuestDisplay(quest, q, scan);
         q.put("subtitle", quest.getRawSubtitle());
         q.put("description", quest.getRawDescription());
-        scan.collectLangFromText(quest.getRawTitle());
         scan.collectLangFromText(quest.getRawSubtitle());
         scan.collectLangFromLines(quest.getRawDescription());
-
-        String iconRef = iconToRef(quest.getIcon(), scan);
-        if (iconRef != null) {
-            q.put("icon", iconRef);
-        }
 
         List<String> deps = new ArrayList<>();
         quest.streamDependencies().forEach(dep -> deps.add(QuestObjectBase.getCodeString(dep.id)));
@@ -219,14 +220,14 @@ public final class QuestFileScanner {
             if (!items.isEmpty()) {
                 t.put("items", items);
             } else if (stack != null && !stack.isEmpty()) {
-                String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+                String id = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
                 t.put("items", List.of(id));
                 scan.addItem(id);
             }
         } else if (task instanceof FluidTask fluidTask) {
             var fluid = fluidTask.getFluid();
             if (fluid != null) {
-                String id = BuiltInRegistries.FLUID.getKey(fluid).toString();
+                String id = ForgeRegistries.FLUIDS.getKey(fluid).toString();
                 t.put("fluid", id);
                 scan.addFluid(id);
             }
@@ -284,23 +285,13 @@ public final class QuestFileScanner {
         return r;
     }
 
-    private static String iconToRef(Icon icon, QuestScanResult scan) {
-        if (icon == null || icon.isEmpty()) {
-            return null;
+    /** SNBT {@code invisible} — hidden in-game until completed; not progression-gated. */
+    private static void exportQuestVisibilityFlags(Quest quest, Map<String, Object> q) {
+        CompoundTag tag = new CompoundTag();
+        quest.writeData(tag);
+        if (tag.getBoolean("invisible")) {
+            q.put("invisible", true);
         }
-        if (icon instanceof ItemIcon itemIcon) {
-            ItemStack stack = itemIcon.getStack();
-            if (stack != null && !stack.isEmpty()) {
-                String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-                scan.addItem(id);
-                return id;
-            }
-        }
-        String s = icon.toString();
-        if (s.contains(":")) {
-            scan.addTexture(s);
-            return s;
-        }
-        return null;
     }
+
 }

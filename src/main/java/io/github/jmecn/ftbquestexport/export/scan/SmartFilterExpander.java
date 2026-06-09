@@ -18,7 +18,9 @@ public final class SmartFilterExpander {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Pattern ITEM_TOKEN = Pattern.compile("item\\(([^)]+)\\)");
-    private static final Pattern TAG_TOKEN = Pattern.compile("tag\\(([^)]+)\\)");
+    /** {@code item_tag(...)}, {@code block_tag(...)}, {@code fluid_tag(...)}, legacy {@code tag(...)}. */
+    private static final Pattern TAG_TOKEN = Pattern.compile(
+            "(?:item_tag|block_tag|fluid_tag|tag)\\(([^)]+)\\)");
 
     private SmartFilterExpander() {}
 

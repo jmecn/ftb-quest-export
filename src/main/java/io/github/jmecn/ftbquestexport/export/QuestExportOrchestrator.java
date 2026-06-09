@@ -146,6 +146,7 @@ public final class QuestExportOrchestrator {
                 if (scan != null) {
                     langKeys = LangClosureKeys.mergeClosureLangKeys(
                             langKeys, scan.getItems(), scan.getFluids());
+                    langKeys = LangClosureKeys.mergeTagLangKeys(langKeys, scan.getTags());
                 }
                 QuestLangExporter.Result lang = QuestLangExporter.export(
                         outputDir, client, null, langKeys.isEmpty() ? null : langKeys);

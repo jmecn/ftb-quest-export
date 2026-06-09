@@ -120,6 +120,24 @@ public final class QuestScanResult {
         }
     }
 
+    /** FTB {@code QuestShape} PNG layers for web quest nodes ({@code background} + {@code outline}). */
+    public void addQuestShapeTextures(String shape) {
+        String shapeId = normalizeQuestShapeId(shape);
+        if (shapeId == null || "none".equals(shapeId)) {
+            return;
+        }
+        String base = "ftbquests:textures/shapes/" + shapeId + "/";
+        addTexture(base + "background.png");
+        addTexture(base + "outline.png");
+    }
+
+    private static String normalizeQuestShapeId(String shape) {
+        if (shape == null || shape.isBlank() || "default".equals(shape)) {
+            return "circle";
+        }
+        return shape.trim();
+    }
+
     public void collectLangFromLines(java.util.List<String> lines) {
         if (lines == null) {
             return;

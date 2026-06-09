@@ -51,6 +51,8 @@ public final class QuestFileScanner {
         index.put("gridScale", file.getGridScale());
         index.put("defaultQuestShape", file.getDefaultQuestShape());
         scan.collectLangFromText(file.getRawTitle());
+        scan.addQuestShapeTextures("circle");
+        scan.addQuestShapeTextures(file.getDefaultQuestShape());
 
         List<Map<String, Object>> groups = new ArrayList<>();
         for (ChapterGroup group : file.getChapterGroups()) {
@@ -103,6 +105,7 @@ public final class QuestFileScanner {
         root.put("defaultQuestShape", chapter.getDefaultQuestShape());
         root.put("orderIndex", chapter.getIndex());
         exportChapterDisplay(chapter, root, scan);
+        scan.addQuestShapeTextures(chapter.getDefaultQuestShape());
 
         List<Map<String, Object>> quests = new ArrayList<>();
         for (Quest quest : chapter.getQuests()) {
@@ -125,6 +128,7 @@ public final class QuestFileScanner {
             l.put("y", link.getY());
             if (link.getShape() != null && !link.getShape().isEmpty()) {
                 l.put("shape", link.getShape());
+                scan.addQuestShapeTextures(link.getShape());
             }
             if (link.getWidth() != 1D) {
                 l.put("size", link.getWidth());
@@ -177,6 +181,7 @@ public final class QuestFileScanner {
         q.put("size", quest.getSize());
         if (quest.getShape() != null && !quest.getShape().isEmpty()) {
             q.put("shape", quest.getShape());
+            scan.addQuestShapeTextures(quest.getShape());
         }
         QuestDisplayExport.applyQuestDisplay(quest, q, scan);
         q.put("subtitle", quest.getRawSubtitle());

@@ -172,7 +172,9 @@ public final class QuestExportOrchestrator {
 
         if (scan != null && QuestItemsLangExporter.isEnabled()) {
             try {
+                QuestLangExporter.exportComposeLang(outputDir, client);
                 QuestItemsLangExporter.Result itemsLang = QuestItemsLangExporter.export(outputDir);
+                QuestItemsLangExporter.deleteComposeLang(outputDir);
                 manifest.put("itemsLang", Map.of(
                         "locales", itemsLang.localeCount(),
                         "items", itemsLang.itemCount(),

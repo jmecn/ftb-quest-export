@@ -31,6 +31,8 @@ import java.util.TreeSet;
 public final class QuestItemsLangExporter {
 
     public static final String ITEMS_LANG_DIR = "items-lang";
+    /** Full mod lang merge (same role as EMI {@code compose-lang/}); not shipped in bundle. */
+    public static final String COMPOSE_LANG_DIR = "compose-lang";
     public static final String DEFAULT_LANGUAGE = "en_us";
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
@@ -133,6 +135,25 @@ public final class QuestItemsLangExporter {
         return new Result(writtenLocales.size(), itemIds.size(), List.copyOf(writtenLocales));
     }
 
+    /** Removes temporary {@link #COMPOSE_LANG_DIR} after items-lang is written. */
+    public static void deleteComposeLang(Path outputDir) {
+        Path composeRoot = outputDir.resolve(COMPOSE_LANG_DIR);
+        if (!java.nio.file.Files.isDirectory(composeRoot)) {
+            return;
+        }
+        try (var walk = java.nio.file.Files.walk(composeRoot)) {
+            walk.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    java.nio.file.Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                    // non-fatal
+                }
+            });
+        } catch (IOException ignored) {
+            // non-fatal
+        }
+    }
+
     private static String normalizeLocale(String locale) {
         if (locale == null || locale.isBlank()) {
             return DEFAULT_LANGUAGE;
@@ -160,10 +181,18 @@ public final class QuestItemsLangExporter {
     }
 
     private static Map<String, String> readLangTable(Path outputDir, String locale) throws IOException {
+        Path composePath = outputDir.resolve(COMPOSE_LANG_DIR).resolve(locale + ".json");
+        if (Files.isRegularFile(composePath)) {
+            return parseLangFile(composePath);
+        }
         Path langPath = outputDir.resolve("lang").resolve(locale + ".json");
         if (!Files.isRegularFile(langPath)) {
             return Map.of();
         }
+        return parseLangFile(langPath);
+    }
+
+    private static Map<String, String> parseLangFile(Path langPath) throws IOException {
         JsonObject object = JsonParser.parseString(Files.readString(langPath)).getAsJsonObject();
         Map<String, String> table = new TreeMap<>();
         for (Map.Entry<String, JsonElement> entry : object.entrySet()) {

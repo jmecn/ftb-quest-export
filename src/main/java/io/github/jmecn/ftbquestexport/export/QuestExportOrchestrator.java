@@ -13,6 +13,8 @@ import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestTagMembersExporter;
 import io.github.jmecn.minecraftwebexport.export.emi.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
+import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
+import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import io.github.jmecn.ftbquestexport.export.scan.QuestSeedExpander;
 import io.github.jmecn.ftbquestexport.export.write.QuestJsonWriter;
@@ -89,6 +91,7 @@ public final class QuestExportOrchestrator {
         QuestClosureResourceExporter.Result resources = null;
         if (scan != null) {
             try {
+                QuestRichTextScan.enrichFromLangClosure(client, scan);
                 resources = QuestClosureResourceExporter.export(outputDir, client, scan);
                 manifest.put("resources", resourceStats(resources));
             } catch (Throwable t) {

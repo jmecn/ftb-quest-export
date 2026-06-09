@@ -167,6 +167,7 @@ public final class QuestScanResult {
             }
             start = close + 1;
         }
+        QuestRichTextScan.collectFromText(this, text);
     }
 
     public void putExpandedFilter(String key, java.util.List<String> itemIds) {

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jmecn.ftbquestexport.export.resources.ExportDirectoryStats;
 import io.github.jmecn.ftbquestexport.export.resources.QuestClosureResourceExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestEmiAssetsExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestIconExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
@@ -96,16 +95,17 @@ public final class QuestExportOrchestrator {
 
         if (scan != null && ItemIconRendererExporter.isEnabled()) {
             try {
-                ItemIconRendererExporter.Result icons = QuestIconExporter.export(
+                QuestIconExporter.Result icons = QuestIconExporter.export(
                         outputDir.resolve("assets/icons"),
                         client,
                         scan.getItems(),
                         Map.of());
                 manifest.put("icons", Map.of(
-                        "itemsWritten", icons.itemsWritten(),
-                        "atlasPages", icons.atlasPages(),
-                        "failures", icons.failures(),
-                        "atlasPngBytes", icons.atlasPngBytes()));
+                        "itemsRendered", icons.atlas().itemsWritten(),
+                        "itemsSliced", icons.slice().itemsSliced(),
+                        "sliceFailures", icons.slice().failures(),
+                        "itemPngBytes", icons.slice().pngBytes(),
+                        "renderFailures", icons.atlas().failures()));
             } catch (Throwable t) {
                 LOGGER.error("icon export failed", t);
                 manifest.put("iconExportError", t.getClass().getSimpleName() + ": " + t.getMessage());
@@ -137,13 +137,6 @@ public final class QuestExportOrchestrator {
 
         if (scan != null) {
             writeMeta(outputDir, scan, resources);
-        }
-
-        try {
-            QuestEmiAssetsExporter.finalizeIconBundle(outputDir);
-        } catch (IOException e) {
-            LOGGER.error("emi assets finalize failed", e);
-            manifest.put("emiAssetsError", e.getClass().getSimpleName() + ": " + e.getMessage());
         }
 
         try {

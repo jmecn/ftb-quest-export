@@ -13,14 +13,18 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 
-/** Writes quest item icons to {@code quest-export/assets/icons/} via minecraft-web-export. */
+/** Writes quest item icons to {@code quest-export/assets/icons/items/} via MWE atlas + slice. */
 public final class QuestIconExporter {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
 
     private QuestIconExporter() {}
 
-    public static ItemIconRendererExporter.Result export(
+    public record Result(
+            ItemIconRendererExporter.Result atlas,
+            QuestIconAtlasSlicer.Result slice) {}
+
+    public static Result export(
             Path iconsRoot,
             Minecraft client,
             Set<String> onlyItemIds,
@@ -28,7 +32,7 @@ public final class QuestIconExporter {
         Files.createDirectories(iconsRoot);
         Path tempRoot = Files.createTempDirectory("ftb-quest-export-icons");
         try {
-            ItemIconRendererExporter.Result result = ItemIconRendererExporter.export(
+            ItemIconRendererExporter.Result atlas = ItemIconRendererExporter.export(
                     tempRoot,
                     client,
                     onlyItemIds,
@@ -44,9 +48,13 @@ public final class QuestIconExporter {
             }
             Files.createDirectories(iconsRoot.getParent());
             FileUtils.copyDirectory(emiIcons.toFile(), iconsRoot.toFile());
-            QuestIconCss.rewriteExportedCss(iconsRoot);
-            LOGGER.info("Copied quest icon atlas to {}", iconsRoot.toAbsolutePath());
-            return result;
+
+            QuestIconAtlasSlicer.Result slice = QuestIconAtlasSlicer.slice(iconsRoot);
+            LOGGER.info(
+                    "Quest item icons: {} rendered, {} sliced to per-item PNGs",
+                    atlas.itemsWritten(),
+                    slice.itemsSliced());
+            return new Result(atlas, slice);
         } finally {
             deleteRecursive(tempRoot);
         }

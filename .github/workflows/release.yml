@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   packages: write
+  actions: write
 
 jobs:
   release:
@@ -19,10 +20,10 @@ jobs:
         with:
           java-version: "17"
           distribution: temurin
-          cache: gradle
 
       - name: Restore Gradle caches
-        uses: actions/cache@v4
+        id: gradle-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.gradle/caches
@@ -34,6 +35,8 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
 
       - name: Build and publish to GitHub Packages
         run: |
@@ -43,6 +46,16 @@ jobs:
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save Gradle caches
+        if: success() && steps.gradle-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle
+          key: fqe-gradle-${{ runner.os }}-${{ hashFiles('gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'build.gradle', 'settings.gradle') }}
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v2

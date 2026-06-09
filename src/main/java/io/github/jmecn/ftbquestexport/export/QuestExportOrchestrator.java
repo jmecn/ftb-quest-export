@@ -6,8 +6,12 @@ import io.github.jmecn.ftbquestexport.export.resources.ExportDirectoryStats;
 import io.github.jmecn.ftbquestexport.export.resources.QuestClosureResourceExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestIconExporter;
+import io.github.jmecn.ftbquestexport.export.resources.QuestItemNameKeysExporter;
+import io.github.jmecn.ftbquestexport.export.resources.QuestItemsIndexExporter;
+import io.github.jmecn.ftbquestexport.export.resources.QuestItemsLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestTagMembersExporter;
+import io.github.jmecn.minecraftwebexport.export.emi.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import io.github.jmecn.ftbquestexport.export.scan.QuestSeedExpander;
@@ -121,17 +125,57 @@ public final class QuestExportOrchestrator {
             }
         }
 
+        if (scan != null) {
+            try {
+                QuestItemsIndexExporter.Result itemsIndex = QuestItemsIndexExporter.export(outputDir, scan);
+                manifest.put("itemsIndex", Map.of(
+                        "itemRefs", itemsIndex.itemRefs(),
+                        "fluidRefs", itemsIndex.fluidRefs(),
+                        "bytes", itemsIndex.bytes()));
+            } catch (IOException e) {
+                LOGGER.error("items-index export failed", e);
+            }
+        }
+
         if (QuestLangExporter.isEnabled()) {
             try {
                 Set<String> langKeys = scan != null ? scan.getLangKeys() : Set.of();
+                if (scan != null) {
+                    langKeys = LangClosureKeys.mergeClosureLangKeys(
+                            langKeys, scan.getItems(), scan.getFluids());
+                }
                 QuestLangExporter.Result lang = QuestLangExporter.export(
                         outputDir, client, null, langKeys.isEmpty() ? null : langKeys);
                 manifest.put("lang", Map.of(
                         "files", lang.languagesWritten(),
                         "bytes", lang.totalBytes(),
-                        "mode", langKeys.isEmpty() ? "full" : "closure"));
+                        "mode", langKeys.isEmpty() ? "full" : "closure",
+                        "closureKeys", lang.closureKeysRequested()));
             } catch (IOException e) {
                 LOGGER.error("lang export failed", e);
+            }
+        }
+
+        if (scan != null && QuestItemNameKeysExporter.isEnabled()) {
+            try {
+                QuestItemNameKeysExporter.Result nameKeys = QuestItemNameKeysExporter.export(outputDir, client);
+                manifest.put("itemNameKeys", Map.of(
+                        "registryIds", nameKeys.registryIds(),
+                        "fluids", nameKeys.fluidIds()));
+            } catch (IOException e) {
+                LOGGER.error("item name-keys export failed", e);
+            }
+        }
+
+        if (scan != null && QuestItemsLangExporter.isEnabled()) {
+            try {
+                QuestItemsLangExporter.Result itemsLang = QuestItemsLangExporter.export(outputDir);
+                manifest.put("itemsLang", Map.of(
+                        "locales", itemsLang.localeCount(),
+                        "items", itemsLang.itemCount(),
+                        "files", itemsLang.locales()));
+            } catch (IOException e) {
+                LOGGER.error("items-lang export failed", e);
             }
         }
 

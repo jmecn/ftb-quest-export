@@ -79,6 +79,10 @@ public final class QuestFileScanner {
                     : null);
             summary.put("orderIndex", chapter.getIndex());
             summary.put("icon", QuestDisplayExport.resolveIconRef(chapter.getIcon(), scan));
+            String chapterTitle = chapter.getRawTitle();
+            if (chapterTitle != null && !chapterTitle.isBlank()) {
+                summary.put("title", chapterTitle);
+            }
             chapterIndex.add(summary);
         }
         index.put("chapters", chapterIndex);
@@ -98,6 +102,7 @@ public final class QuestFileScanner {
         root.put("icon", QuestDisplayExport.resolveIconRef(chapter.getIcon(), scan));
         root.put("defaultQuestShape", chapter.getDefaultQuestShape());
         root.put("orderIndex", chapter.getIndex());
+        exportChapterDisplay(chapter, root, scan);
 
         List<Map<String, Object>> quests = new ArrayList<>();
         for (Quest quest : chapter.getQuests()) {
@@ -148,6 +153,19 @@ public final class QuestFileScanner {
         }
         root.put("images", images);
         return root;
+    }
+
+    private static void exportChapterDisplay(Chapter chapter, Map<String, Object> root, QuestScanResult scan) {
+        String rawTitle = chapter.getRawTitle();
+        if (rawTitle != null && !rawTitle.isBlank()) {
+            root.put("title", rawTitle);
+            scan.collectLangFromText(rawTitle);
+        }
+        List<String> rawSubtitle = chapter.getRawSubtitle();
+        if (!rawSubtitle.isEmpty()) {
+            root.put("subtitle", rawSubtitle);
+            scan.collectLangFromLines(rawSubtitle);
+        }
     }
 
     private static Map<String, Object> exportQuest(Quest quest, QuestScanResult scan) {

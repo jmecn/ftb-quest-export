@@ -1,11 +1,14 @@
 package io.github.jmecn.ftbquestexport.export.icons;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.icon.IconAnimation;
 import dev.ftb.mods.ftblibrary.icon.IResourceIcon;
+import dev.ftb.mods.ftblibrary.icon.ImageIcon;
 import dev.ftb.mods.ftblibrary.math.PixelBuffer;
 import dev.ftb.mods.ftbquests.quest.ChapterImage;
 import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
@@ -29,6 +32,8 @@ import java.util.Map;
 
 /** Frame layout, extraction, and PNG baking for FTB chapter decoration icons. */
 public final class ChapterImages {
+
+    public record AnimationMeta(int frameTime, List<Integer> frameSequence) {}
 
     private ChapterImages() {}
 
@@ -113,9 +118,12 @@ public final class ChapterImages {
         }
         img.put("animated", true);
         img.put("frameCount", layout.frameCount());
-        int frameTime = readAnimationFrameTime(icon);
-        if (frameTime > 0) {
-            img.put("frameTime", frameTime);
+        AnimationMeta animation = readAnimationMeta(icon, layout.frameCount());
+        if (animation.frameTime() > 0) {
+            img.put("frameTime", animation.frameTime());
+        }
+        if (!animation.frameSequence().isEmpty()) {
+            img.put("frameSequence", animation.frameSequence());
         }
         if (layout.frameWidth() > 0) {
             img.put("frameWidth", layout.frameWidth());
@@ -185,36 +193,75 @@ public final class ChapterImages {
 
     /** {@code animation.frametime} from texture {@code .mcmeta}; defaults to 1 (vanilla). */
     public static int readAnimationFrameTime(Icon icon) {
+        return readAnimationMeta(icon, Math.max(1, analyze(icon).frameCount())).frameTime();
+    }
+
+    /**
+     * {@code animation.frametime} and {@code animation.frames} from texture {@code .mcmeta}.
+     * When {@code frames} is absent, sequence is {@code [0..textureFrameCount-1]} (vanilla strip order).
+     */
+    public static AnimationMeta readAnimationMeta(Icon icon, int textureFrameCount) {
+        int frameTime = 1;
+        List<Integer> sequence = new ArrayList<>();
         ResourceLocation texture = textureResourceLocation(icon);
         if (texture == null) {
-            return 1;
+            return defaultAnimationMeta(textureFrameCount);
         }
         ResourceLocation metaId = ResourceLocation.fromNamespaceAndPath(
                 texture.getNamespace(),
                 texture.getPath() + ".mcmeta");
         Minecraft client = Minecraft.getInstance();
         if (client == null) {
-            return 1;
+            return defaultAnimationMeta(textureFrameCount);
         }
         try {
             Resource resource = client.getResourceManager().getResource(metaId).orElse(null);
             if (resource == null) {
-                return 1;
+                return defaultAnimationMeta(textureFrameCount);
             }
             try (var reader = new java.io.InputStreamReader(resource.open())) {
                 JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
                 if (!root.has("animation")) {
-                    return 1;
+                    return defaultAnimationMeta(textureFrameCount);
                 }
                 JsonObject animation = root.getAsJsonObject("animation");
                 if (animation.has("frametime")) {
-                    return Math.max(1, animation.get("frametime").getAsInt());
+                    frameTime = Math.max(1, animation.get("frametime").getAsInt());
+                }
+                if (animation.has("frames")) {
+                    JsonArray frames = animation.getAsJsonArray("frames");
+                    for (JsonElement element : frames) {
+                        if (element.isJsonPrimitive()) {
+                            sequence.add(element.getAsInt());
+                        } else if (element.isJsonObject()) {
+                            JsonObject frame = element.getAsJsonObject();
+                            if (frame.has("index")) {
+                                sequence.add(frame.get("index").getAsInt());
+                            }
+                        }
+                    }
                 }
             }
         } catch (Exception ignored) {
-            return 1;
+            return defaultAnimationMeta(textureFrameCount);
         }
-        return 1;
+        if (sequence.isEmpty()) {
+            return defaultAnimationMeta(textureFrameCount, frameTime);
+        }
+        return new AnimationMeta(frameTime, List.copyOf(sequence));
+    }
+
+    private static AnimationMeta defaultAnimationMeta(int textureFrameCount) {
+        return defaultAnimationMeta(textureFrameCount, 1);
+    }
+
+    private static AnimationMeta defaultAnimationMeta(int textureFrameCount, int frameTime) {
+        int count = Math.max(1, textureFrameCount);
+        List<Integer> sequence = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            sequence.add(i);
+        }
+        return new AnimationMeta(frameTime, List.copyOf(sequence));
     }
 
     private static ResourceLocation textureResourceLocation(Icon icon) {

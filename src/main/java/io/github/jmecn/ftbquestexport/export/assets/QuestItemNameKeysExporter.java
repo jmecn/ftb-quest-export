@@ -1,4 +1,4 @@
-package io.github.jmecn.ftbquestexport.export.resources;
+package io.github.jmecn.ftbquestexport.export.assets;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -98,24 +98,5 @@ public final class QuestItemNameKeysExporter {
 
         FtbQuestExportMod.LOGGER.info("[name-keys] {} registry ids ({} fluids) -> {}", items.size(), fluidCount, out);
         return new Result(items.size() - fluidCount, fluidCount);
-    }
-
-    public static Map<String, String> readNameKeys(Path outputDir) throws IOException {
-        Path file = outputDir.resolve(ITEM_NAME_KEYS_FILE);
-        if (!Files.isRegularFile(file)) {
-            return Map.of();
-        }
-        JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-        JsonElement items = root.get("items");
-        if (items == null || !items.isJsonObject()) {
-            return Map.of();
-        }
-        Map<String, String> map = new TreeMap<>();
-        for (Map.Entry<String, JsonElement> entry : items.getAsJsonObject().entrySet()) {
-            if (entry.getValue().isJsonPrimitive()) {
-                map.put(entry.getKey(), entry.getValue().getAsString());
-            }
-        }
-        return map;
     }
 }

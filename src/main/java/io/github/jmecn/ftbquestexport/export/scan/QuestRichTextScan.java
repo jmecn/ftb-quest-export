@@ -1,12 +1,20 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
-import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
-
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import dev.ftb.mods.ftblibrary.util.StringUtils;
+import dev.ftb.mods.ftblibrary.util.TextComponentParser;
+import dev.ftb.mods.ftblibrary.util.client.ImageComponent;
+import dev.ftb.mods.ftbquests.quest.Quest;
+import dev.ftb.mods.ftbquests.util.TextUtils;
 import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
-import io.github.jmecn.ftbquestexport.export.resources.ResourceExportFilter;
+import io.github.jmecn.ftbquestexport.export.assets.ResourceExportFilter;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -16,17 +24,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Collects texture refs from FTB Quests rich text ({@code {image:mod:textures/... width:100 ...}}),
- * mirroring {@code ClientTextComponentUtils} / {@code ImageComponent}.
+ * Collects lang keys and texture refs from FTB Quests rich text.
  */
 public final class QuestRichTextScan {
-
-
-    private static final Pattern IMAGE_BLOCK = Pattern.compile("\\{image:([^}]+)\\}", Pattern.CASE_INSENSITIVE);
 
     private QuestRichTextScan() {}
 
@@ -34,25 +36,12 @@ public final class QuestRichTextScan {
         if (text == null || text.isBlank()) {
             return;
         }
-        Matcher matcher = IMAGE_BLOCK.matcher(text);
-        while (matcher.find()) {
-            String ref = imageRefFromProperties(matcher.group(1));
-            if (ref != null) {
-                scan.addTexture(ref);
-            }
+        for (String line : text.split("\n", -1)) {
+            collectFromLine(scan, line);
         }
     }
 
-    public static void collectFromLines(QuestScanResult scan, java.util.List<String> lines) {
-        if (lines == null) {
-            return;
-        }
-        for (String line : lines) {
-            collectFromText(scan, line);
-        }
-    }
-
-    /** Scan resolved lang strings for embedded {@code {image:...}} before texture closure. */
+    /** Scan resolved lang strings for embedded rich text before texture closure. */
     public static void enrichFromLangClosure(Minecraft client, QuestScanResult scan) {
         Set<String> wanted = scan.getLangKeys();
         if (wanted.isEmpty()) {
@@ -81,39 +70,80 @@ public final class QuestRichTextScan {
         }
     }
 
-    static String imageRefFromProperties(String props) {
-        if (props == null || props.isBlank()) {
-            return null;
+    private static void collectFromLine(QuestScanResult scan, String line) {
+        if (line == null || line.isBlank() || Quest.PAGEBREAK_CODE.equals(line.trim())) {
+            return;
         }
-        String image = splitProperties(props).get("image");
-        if (image == null || image.isBlank()) {
-            return null;
+        walkComponentTree(TextUtils.parseRawText(line), scan);
+        if (!isJsonText(line)) {
+            TextComponentParser.parse(line, inner -> {
+                recordLangSubstitute(scan, inner);
+                return Component.empty();
+            });
         }
-        return normalizeTextureRef(image);
     }
 
-    static Map<String, String> splitProperties(String input) {
-        Map<String, String> map = new LinkedHashMap<>();
-        for (String token : input.split(" ")) {
-            if (token.isEmpty()) {
-                continue;
-            }
-            int colon = token.indexOf(':');
-            if (colon < 0) {
-                map.put(token, "");
-            } else {
-                map.put(token.substring(0, colon), token.substring(colon + 1).replace("%20", " "));
-            }
+    /**
+     * {@link TextUtils} has no public JSON probe; it uses a private regex then
+     * {@link Component.Serializer#fromJson}. We probe with the same deserializer so
+     * {@link TextComponentParser} is skipped only on lines {@link TextUtils#parseRawText} treats as JSON.
+     */
+    private static boolean isJsonText(String line) {
+        String trimmed = line.trim();
+        if (trimmed.isEmpty()) {
+            return false;
         }
-        return map;
+        char first = trimmed.charAt(0);
+        if (first != '{' && first != '[') {
+            return false;
+        }
+        try {
+            Component.Serializer.fromJson(trimmed);
+            return true;
+        } catch (JsonParseException e) {
+            return false;
+        }
     }
 
-    static String normalizeTextureRef(String ref) {
-        String trimmed = ref.trim();
-        if (!trimmed.contains(":")) {
-            return null;
+    private static void recordLangSubstitute(QuestScanResult scan, String inner) {
+        if (inner.isEmpty() || inner.startsWith("@")) {
+            return;
         }
-        return trimmed.endsWith(".png") ? trimmed : trimmed + ".png";
+        if (inner.indexOf(':') != -1) {
+            Map<String, String> props = StringUtils.splitProperties(inner);
+            if (props.containsKey("image") || props.containsKey("open_url")) {
+                return;
+            }
+            return;
+        }
+        scan.addLangKey(inner);
+    }
+
+    private static void walkComponentTree(Component root, QuestScanResult scan) {
+        walkComponentNode(root, scan);
+    }
+
+    private static void walkComponentNode(Component component, QuestScanResult scan) {
+        ComponentContents contents = component.getContents();
+        if (contents instanceof ImageComponent image) {
+            addImageTexture(scan, image);
+        } else if (contents instanceof TranslatableContents translatable) {
+            scan.addLangKey(translatable.getKey());
+        }
+        for (Component sibling : component.getSiblings()) {
+            walkComponentNode(sibling, scan);
+        }
+    }
+
+    private static void addImageTexture(QuestScanResult scan, ImageComponent image) {
+        if (image.image == null || image.image.isEmpty()) {
+            return;
+        }
+        String ref = image.image.toString();
+        if (ref.isBlank() || !ref.contains(":")) {
+            return;
+        }
+        scan.addTexture(ref.endsWith(".png") ? ref : ref + ".png");
     }
 
     private static Map<String, String> readLangValues(

@@ -1,17 +1,17 @@
 package io.github.jmecn.ftbquestexport.export;
 
+import io.github.jmecn.ftbquestexport.export.assets.QuestAssetExporter;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import io.github.jmecn.ftbquestexport.export.resources.ExportDirectoryStats;
-import io.github.jmecn.ftbquestexport.export.resources.QuestClosureResourceExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestFluidExporter;
+import io.github.jmecn.ftbquestexport.export.assets.ExportDirectoryStats;
+import io.github.jmecn.ftbquestexport.export.assets.QuestFluidExporter;
+import io.github.jmecn.ftbquestexport.export.assets.QuestIconExporter;
+import io.github.jmecn.ftbquestexport.export.assets.QuestItemNameKeysExporter;
+import io.github.jmecn.ftbquestexport.export.assets.QuestItemsIndexExporter;
+import io.github.jmecn.ftbquestexport.export.assets.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestIconExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestItemNameKeysExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestItemsIndexExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
@@ -59,11 +59,11 @@ public final class QuestExportPipeline {
             manifest.put("error", t.getClass().getSimpleName() + ": " + t.getMessage());
         }
 
-        QuestClosureResourceExporter.Result resources = null;
+        QuestAssetExporter.Result resources = null;
         if (scan != null) {
             try {
                 QuestRichTextScan.enrichFromLangClosure(client, scan);
-                resources = QuestClosureResourceExporter.export(outputDir, client, scan);
+                resources = QuestAssetExporter.export(outputDir, client, scan);
                 manifest.put("resources", resourceStats(resources));
             } catch (Throwable t) {
                 FtbQuestExportMod.LOGGER.error("resource closure export failed", t);
@@ -171,7 +171,7 @@ public final class QuestExportPipeline {
     private static void writeMeta(
             Path outputDir,
             QuestScanResult scan,
-            QuestClosureResourceExporter.Result resources) throws IOException {
+            QuestAssetExporter.Result resources) throws IOException {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("refs", scan.toRefsMap());
         meta.put("taskTypeSupport", defaultTaskTypeSupport());
@@ -202,7 +202,7 @@ public final class QuestExportPipeline {
         return support;
     }
 
-    private static Map<String, Object> resourceStats(QuestClosureResourceExporter.Result resources) {
+    private static Map<String, Object> resourceStats(QuestAssetExporter.Result resources) {
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("assetFiles", resources.assetFiles());
         stats.put("dataFiles", resources.dataFiles());

@@ -42,9 +42,6 @@ public final class FluidStillIconRenderer {
 
         TextureAtlas atlas = client.getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS);
         TextureAtlasSprite sprite = atlas.getSprite(still);
-        if (sprite == null) {
-            return false;
-        }
 
         if (renderer.isAnimated(List.of(sprite))) {
             renderer.uploadAnimatedFirstFrame(List.of(sprite));

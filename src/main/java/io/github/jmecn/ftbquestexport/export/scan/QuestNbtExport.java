@@ -1,13 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /** Reads FTB Quest task/reward SNBT fields via {@code writeData}. */
 final class QuestNbtExport {

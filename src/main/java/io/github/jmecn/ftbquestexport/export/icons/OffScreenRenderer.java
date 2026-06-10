@@ -21,12 +21,8 @@ public final class OffScreenRenderer implements AutoCloseable {
 
     private final NativeImage nativeImage;
     private final TextureTarget frameBuffer;
-    private final int width;
-    private final int height;
 
     public OffScreenRenderer(int width, int height) {
-        this.width = width;
-        this.height = height;
         RenderSystem.viewport(0, 0, width, height);
         nativeImage = new NativeImage(width, height, true);
         frameBuffer = new TextureTarget(width, height, true, true);
@@ -40,10 +36,8 @@ public final class OffScreenRenderer implements AutoCloseable {
         frameBuffer.destroyBuffers();
 
         var minecraft = Minecraft.getInstance();
-        if (minecraft != null) {
-            var window = minecraft.getWindow();
-            RenderSystem.viewport(0, 0, window.getWidth(), window.getHeight());
-        }
+        var window = minecraft.getWindow();
+        RenderSystem.viewport(0, 0, window.getWidth(), window.getHeight());
     }
 
     public void captureAsPng(Runnable runnable, Path path) throws IOException {

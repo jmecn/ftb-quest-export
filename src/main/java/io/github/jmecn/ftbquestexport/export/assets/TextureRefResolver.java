@@ -1,4 +1,4 @@
-package io.github.jmecn.ftbquestexport.export.resources;
+package io.github.jmecn.ftbquestexport.export.assets;
 
 import net.minecraft.resources.ResourceLocation;
 

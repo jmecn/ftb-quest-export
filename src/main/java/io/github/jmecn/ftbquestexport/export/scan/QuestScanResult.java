@@ -154,25 +154,6 @@ public final class QuestScanResult {
     }
 
     public void collectLangFromText(String text) {
-        if (text == null || text.isBlank()) {
-            return;
-        }
-        int start = 0;
-        while (true) {
-            int open = text.indexOf('{', start);
-            if (open < 0) {
-                break;
-            }
-            int close = text.indexOf('}', open + 1);
-            if (close < 0) {
-                break;
-            }
-            String key = text.substring(open + 1, close);
-            if (!key.isEmpty() && !key.startsWith("@") && key.contains(".")) {
-                langKeys.add(key);
-            }
-            start = close + 1;
-        }
         QuestRichTextScan.collectFromText(this, text);
     }
 

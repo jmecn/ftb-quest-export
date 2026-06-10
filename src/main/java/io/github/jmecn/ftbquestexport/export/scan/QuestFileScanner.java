@@ -9,7 +9,6 @@ import dev.ftb.mods.ftbquests.quest.ChapterGroup;
 import dev.ftb.mods.ftbquests.quest.ChapterImage;
 import dev.ftb.mods.ftbquests.quest.Quest;
 import dev.ftb.mods.ftbquests.quest.QuestLink;
-import dev.ftb.mods.ftbquests.quest.QuestObject;
 import dev.ftb.mods.ftbquests.quest.QuestObjectBase;
 import dev.ftb.mods.ftbquests.quest.reward.ItemReward;
 import dev.ftb.mods.ftbquests.quest.reward.Reward;
@@ -249,6 +248,7 @@ public final class QuestFileScanner {
             }
             if (!items.isEmpty()) {
                 t.put("items", items);
+                items.forEach(scan::addItem);
             } else if (stack != null && !stack.isEmpty()) {
                 String id = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
                 t.put("items", List.of(id));

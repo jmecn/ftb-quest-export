@@ -1,4 +1,4 @@
-package io.github.jmecn.ftbquestexport.export.resources;
+package io.github.jmecn.ftbquestexport.export.assets;
 
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
@@ -12,14 +12,9 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Copies closure PNGs referenced by {@link QuestScanResult#getTextures()} into {@code assets/}.
- * Item icons use {@link QuestIconExporter} (off-screen render), not model JSON traversal.
- */
-public final class QuestClosureResourceExporter {
+public final class QuestAssetExporter {
 
-
-    private QuestClosureResourceExporter() {}
+    private QuestAssetExporter() {}
 
     public record Result(
             int assetFiles,
@@ -77,10 +72,19 @@ public final class QuestClosureResourceExporter {
             }
             try {
                 var opt = rm.getResource(id);
+                if (opt.isEmpty()) {
+                    var stack = rm.getResourceStack(id);
+                    if (!stack.isEmpty()) {
+                        opt = java.util.Optional.of(stack.get(stack.size() - 1));
+                    }
+                }
                 if (opt.isPresent()) {
                     counters.bytes += ResourceFileWriter.write(assetsRoot, id, opt.get());
                     counters.files++;
                     counters.written++;
+                } else {
+                    counters.failures++;
+                    FtbQuestExportMod.LOGGER.warn("[textures] missing resource for {}", id);
                 }
             } catch (IOException e) {
                 counters.failures++;

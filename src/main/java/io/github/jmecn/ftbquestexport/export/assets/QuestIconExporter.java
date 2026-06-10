@@ -1,4 +1,4 @@
-package io.github.jmecn.ftbquestexport.export.resources;
+package io.github.jmecn.ftbquestexport.export.assets;
 
 import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
 import net.minecraft.client.Minecraft;
@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
-/** Facade for quest closure icon export (per-item PNG, no atlas). */
+/** Facade for quest icon export (per-item PNG, no atlas). */
 public final class QuestIconExporter {
 
     private QuestIconExporter() {}

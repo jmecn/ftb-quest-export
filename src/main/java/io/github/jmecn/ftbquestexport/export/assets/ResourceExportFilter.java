@@ -1,4 +1,4 @@
-package io.github.jmecn.ftbquestexport.export.resources;
+package io.github.jmecn.ftbquestexport.export.assets;
 
 import net.minecraft.resources.ResourceLocation;
 
@@ -6,15 +6,10 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Namespaces omitted from runtime asset/data mirror export. */
 public final class ResourceExportFilter {
 
-    /**
-     * {@code additionalplacements} registers a huge runtime pack (generated blockstates/models for
-     * placement previews) — not used by the field guide site.
-     */
     private static final Set<String> DEFAULT_EXCLUDED = Set.of("additionalplacements");
 
     private ResourceExportFilter() {}

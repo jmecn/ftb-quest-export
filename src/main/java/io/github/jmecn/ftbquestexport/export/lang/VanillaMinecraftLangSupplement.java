@@ -28,9 +28,9 @@ final class VanillaMinecraftLangSupplement {
                         || key.startsWith("fluid.minecraft."));
     }
 
-    static int supplement(Map<String, String> merged, Minecraft client, String langCode, Set<String> onlyKeys) {
+    static void supplement(Map<String, String> merged, Minecraft client, String langCode, Set<String> onlyKeys) {
         if (onlyKeys == null || onlyKeys.isEmpty()) {
-            return 0;
+            return;
         }
         Set<String> missing = new TreeSet<>();
         for (String key : onlyKeys) {
@@ -39,7 +39,7 @@ final class VanillaMinecraftLangSupplement {
             }
         }
         if (missing.isEmpty()) {
-            return 0;
+            return;
         }
 
         List<String> locales = new ArrayList<>();
@@ -71,7 +71,6 @@ final class VanillaMinecraftLangSupplement {
                     langCode,
                     added);
         }
-        return added;
     }
 
     private static int copyMissingFromMinecraftPack(

@@ -1,14 +1,9 @@
 package io.github.jmecn.ftbquestexport.export.lang;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-/**
- * Lang keys to request from mod lang files ({@code assets/<mod>/lang/<locale>.json}) for scoped export closure.
- * Aligned with {@code emi-bundle-optimize/gtceu-composed-keys.mjs} and {@code emi-recipe-renderer}.
- */
 public final class LangClosureKeys {
 
     private static final String GTCEU = "gtceu";

@@ -209,10 +209,8 @@ public final class GtceuRegistryLabels {
             case "molten" -> "gtceu.fluid.molten";
             case "plasma" -> "gtceu.fluid.plasma";
             case "liquid" -> firstPresent(langTable, "gtceu.fluid.liquid_generic", "gtceu.fluid.generic", "gtceu.fluid.liquid_generic");
-            case "gas", "primary" -> modpackFluid
-                    ? pickGenericFluidTemplate(langTable)
-                    : pickGenericFluidTemplate(langTable);
-            default -> modpackFluid ? pickGenericFluidTemplate(langTable) : pickGenericFluidTemplate(langTable);
+            case "gas", "primary" -> pickGenericFluidTemplate(langTable);
+            default -> pickGenericFluidTemplate(langTable);
         };
     }
 
@@ -513,10 +511,7 @@ public final class GtceuRegistryLabels {
             }
         }
         String itemOverride = tryItemSpecificLang(namespace, path, translateKey, langTable);
-        if (itemOverride != null) {
-            return itemOverride;
-        }
-        return null;
+        return itemOverride;
     }
 
     static String translateComposedRegistry(

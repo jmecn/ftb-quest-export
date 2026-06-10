@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
-import io.github.jmecn.ftbquestexport.export.resources.ResourceExportFilter;
+import io.github.jmecn.ftbquestexport.export.assets.ResourceExportFilter;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;

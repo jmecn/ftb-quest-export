@@ -1,7 +1,5 @@
 package io.github.jmecn.ftbquestexport.export.resources;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -10,15 +8,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Copies closure PNGs referenced by {@link QuestScanResult#getTextures()} into {@code assets/}.
+ * Item icons use {@link QuestIconExporter} (off-screen render), not model JSON traversal.
+ */
 public final class QuestClosureResourceExporter {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
@@ -37,94 +34,28 @@ public final class QuestClosureResourceExporter {
 
     public static Result export(Path outputDir, Minecraft client, QuestScanResult scan) throws IOException {
         Path assetsRoot = outputDir.resolve("assets");
-        ResourceManager clientRm = client.getResourceManager();
+        ResourceManager rm = client.getResourceManager();
         Set<String> excluded = ResourceExportFilter.excludedNamespaces();
 
-        Set<ResourceLocation> modelQueue = new LinkedHashSet<>();
-        for (String texture : scan.getTextures()) {
-            ModelDependencyCollector.seedTextureRef(texture, modelQueue);
-        }
-        for (String item : scan.getItems()) {
-            ModelDependencyCollector.seedItem(clientRm, item, modelQueue);
-        }
-        for (String block : scan.getBlocks()) {
-            ModelDependencyCollector.seedBlockId(clientRm, block, modelQueue);
-        }
+        int textureRefCount = scan.getTextures().size();
+        Set<ResourceLocation> textures = TextureRefResolver.resolveAll(scan.getTextures());
+        ExportCounters assets = writeTextures(rm, assetsRoot, textures, excluded);
 
-        int seeded = modelQueue.size();
-        Set<ResourceLocation> textures = collectTextureRefs(clientRm, modelQueue, excluded);
-        ExportCounters assets = writeTextures(clientRm, assetsRoot, textures, excluded);
-
-        LOGGER.info("[closure] texture-only: seeded {} model/blockstate refs, {} textures, wrote {} files",
-                seeded, textures.size(), assets.files);
+        LOGGER.info(
+                "[textures] {} scan refs → {} PNG locations, wrote {} files",
+                textureRefCount,
+                textures.size(),
+                assets.files);
 
         return new Result(
-                assets.files, 0,
-                assets.bytes, 0,
+                assets.files,
+                0,
+                assets.bytes,
+                0,
                 assets.failures,
                 true,
-                seeded,
+                textureRefCount,
                 assets.written);
-    }
-
-    private static Set<ResourceLocation> collectTextureRefs(
-            ResourceManager rm,
-            Set<ResourceLocation> seeds,
-            Set<String> excludedNamespaces) {
-        Set<ResourceLocation> textures = new LinkedHashSet<>();
-        Set<ResourceLocation> visited = new HashSet<>();
-        Deque<ResourceLocation> pending = new ArrayDeque<>(seeds);
-
-        while (!pending.isEmpty()) {
-            ResourceLocation id = pending.removeFirst();
-            if (!visited.add(id)) {
-                continue;
-            }
-            if (excludedNamespaces.contains(id.getNamespace())) {
-                continue;
-            }
-            String path = id.getPath();
-            if (path.endsWith(".png") || path.endsWith(".png.mcmeta")) {
-                textures.add(id);
-                continue;
-            }
-            if (path.endsWith(".json") && path.startsWith("blockstates/")) {
-                rm.getResource(id).ifPresent(resource ->
-                        ModelDependencyWalker.enqueueBlockstateDependencies(rm, id, resource, pending, visited));
-                continue;
-            }
-            if (path.endsWith(".json") && path.startsWith("models/")) {
-                walkModelJson(rm, id, pending, visited);
-            }
-        }
-        return textures;
-    }
-
-    private static void walkModelJson(
-            ResourceManager rm,
-            ResourceLocation modelId,
-            Deque<ResourceLocation> pending,
-            Set<ResourceLocation> visited) {
-        var opt = rm.getResource(modelId);
-        if (opt.isPresent()) {
-            try (var reader = new InputStreamReader(opt.get().open(), StandardCharsets.UTF_8)) {
-                JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
-                ModelDependencyWalker.enqueueModelDependenciesFromJson(rm, modelId, root, pending, visited);
-            } catch (Exception ignored) {
-                // non-fatal
-            }
-            return;
-        }
-        var synthetic = SyntheticModelCatalog.content(modelId);
-        if (synthetic.isEmpty()) {
-            return;
-        }
-        try {
-            JsonObject root = JsonParser.parseString(synthetic.get()).getAsJsonObject();
-            ModelDependencyWalker.enqueueModelDependenciesFromJson(rm, modelId, root, pending, visited);
-        } catch (Exception ignored) {
-            // non-fatal
-        }
     }
 
     private static ExportCounters writeTextures(
@@ -141,6 +72,10 @@ public final class QuestClosureResourceExporter {
             if (excludedNamespaces.contains(id.getNamespace())) {
                 continue;
             }
+            String path = id.getPath();
+            if (!path.endsWith(".png") && !path.endsWith(".png.mcmeta")) {
+                continue;
+            }
             try {
                 var opt = rm.getResource(id);
                 if (opt.isPresent()) {
@@ -150,7 +85,7 @@ public final class QuestClosureResourceExporter {
                 }
             } catch (IOException e) {
                 counters.failures++;
-                LOGGER.warn("[closure] failed to write {}: {}", id, e.getMessage());
+                LOGGER.warn("[textures] failed to write {}: {}", id, e.getMessage());
             }
         }
         return counters;

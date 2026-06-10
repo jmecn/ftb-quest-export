@@ -34,14 +34,17 @@ public final class QuestExportConstants {
     public static final String SKIP_ICON_EXPORT = "quest.skipIconExport";
     public static final String SKIP_CHAPTER_IMAGE_EXPORT = "quest.skipChapterImageExport";
     public static final String SKIP_ITEM_NAME_KEYS_EXPORT = "quest.skipItemNameKeysExport";
+    public static final String SKIP_SEARCH_INDEX_EXPORT = "quest.skipSearchIndexExport";
+
+    // —— Quest search index ——
+    public static final String SEARCH_INDEX_DIR = "search-index";
+    public static final String LOG_PREFIX_SEARCH_INDEX = "[search-index]";
 
     // —— Lang merge ——
     public static final String FTBQUESTS_NAMESPACE = "ftbquests";
     public static final String LOG_DETAIL_FAILURES = "quest.export.logDetailFailures";
     public static final int LOG_DETAIL_FAILURE_LIMIT = 20;
     public static final String LOG_PREFIX_LANG = "[lang]";
-    public static final String LOG_PREFIX_ITEMS_LANG = "[items-lang]";
-    public static final String LOG_PREFIX_ITEM_NAME_KEYS = "[item-name-keys]";
 
     // —— Chapter decoration images ——
     public static final String CHAPTER_IMAGES_REL_ROOT = "assets/chapter-images";

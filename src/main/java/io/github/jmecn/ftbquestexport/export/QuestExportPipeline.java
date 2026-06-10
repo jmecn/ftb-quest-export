@@ -9,6 +9,7 @@ import io.github.jmecn.ftbquestexport.export.assets.QuestItemNameKeysExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestItemsIndexExporter;
 import io.github.jmecn.ftbquestexport.export.lang.QuestLangKeys;
 import io.github.jmecn.ftbquestexport.export.lang.LangMergerExporter;
+import io.github.jmecn.ftbquestexport.export.lang.QuestSearchIndexExporter;
 import io.github.jmecn.ftbquestexport.export.pojo.AssetExportResult;
 import io.github.jmecn.ftbquestexport.export.pojo.FluidExportResult;
 import io.github.jmecn.ftbquestexport.export.pojo.ScanBundle;
@@ -45,7 +46,7 @@ public final class QuestExportPipeline {
         Minecraft client = Minecraft.getInstance();
 
         QuestScanResult scan = null;
-        ScanBundle bundle;
+        ScanBundle bundle = null;
         try {
             bundle = QuestFileScanner.scan();
             scan = bundle.scan();
@@ -157,6 +158,18 @@ public final class QuestExportPipeline {
                         "fluids", nameKeys.fluidIds()));
             } catch (IOException e) {
                 FtbQuestExportMod.LOGGER.error("item name-keys export failed", e);
+            }
+        }
+
+        if (bundle != null && QuestSearchIndexExporter.isEnabled()) {
+            try {
+                var searchIndex = QuestSearchIndexExporter.export(outputDir, bundle.chapters());
+                manifest.put("searchIndex", Map.of(
+                        "locales", searchIndex.localesWritten(),
+                        "quests", searchIndex.questCount(),
+                        "files", searchIndex.locales()));
+            } catch (IOException e) {
+                FtbQuestExportMod.LOGGER.error("search-index export failed", e);
             }
         }
 

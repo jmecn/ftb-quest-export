@@ -1,9 +1,11 @@
 package io.github.jmecn.ftbquestexport.export.icons;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.icon.Icon;
 import dev.ftb.mods.ftblibrary.icon.IconAnimation;
-import dev.ftb.mods.ftblibrary.icon.ImageIcon;
+import dev.ftb.mods.ftblibrary.icon.IResourceIcon;
 import dev.ftb.mods.ftblibrary.math.PixelBuffer;
 import dev.ftb.mods.ftbquests.quest.ChapterImage;
 import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
@@ -11,6 +13,8 @@ import io.github.jmecn.ftbquestexport.export.pojo.ChapterImageBakeResult;
 import io.github.jmecn.ftbquestexport.export.pojo.ChapterImageLayout;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
@@ -109,6 +113,10 @@ public final class ChapterImages {
         }
         img.put("animated", true);
         img.put("frameCount", layout.frameCount());
+        int frameTime = readAnimationFrameTime(icon);
+        if (frameTime > 0) {
+            img.put("frameTime", frameTime);
+        }
         if (layout.frameWidth() > 0) {
             img.put("frameWidth", layout.frameWidth());
         }
@@ -141,9 +149,11 @@ public final class ChapterImages {
             frameW = targetPx;
             frameH = targetPx;
             strip = new PixelBuffer(frameW, frameH * frameCount);
+            // Keep animated strips unmodulated; React applies alpha/tint at draw time like FTB AtlasSpriteIcon.
+            Color4I frameMod = frameCount > 1 ? Color4I.WHITE : mod;
             for (int i = 0; i < frameCount; i++) {
                 PixelBuffer scaled = scaleFrame(frames.get(i), frameW, frameH);
-                modulate(scaled, mod);
+                modulate(scaled, frameMod);
                 strip.setRGB(0, i * frameH, scaled);
             }
         } else {
@@ -171,6 +181,67 @@ public final class ChapterImages {
     public static int targetFramePixels(ChapterImage chapterImage) {
         double grid = Math.max(chapterImage.getWidth(), chapterImage.getHeight());
         return Math.max(QuestExportConstants.CHAPTER_IMAGE_MIN_FRAME_PX, (int) Math.ceil(grid * 16D * 2D));
+    }
+
+    /** {@code animation.frametime} from texture {@code .mcmeta}; defaults to 1 (vanilla). */
+    public static int readAnimationFrameTime(Icon icon) {
+        ResourceLocation texture = textureResourceLocation(icon);
+        if (texture == null) {
+            return 1;
+        }
+        ResourceLocation metaId = ResourceLocation.fromNamespaceAndPath(
+                texture.getNamespace(),
+                texture.getPath() + ".mcmeta");
+        Minecraft client = Minecraft.getInstance();
+        if (client == null) {
+            return 1;
+        }
+        try {
+            Resource resource = client.getResourceManager().getResource(metaId).orElse(null);
+            if (resource == null) {
+                return 1;
+            }
+            try (var reader = new java.io.InputStreamReader(resource.open())) {
+                JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
+                if (!root.has("animation")) {
+                    return 1;
+                }
+                JsonObject animation = root.getAsJsonObject("animation");
+                if (animation.has("frametime")) {
+                    return Math.max(1, animation.get("frametime").getAsInt());
+                }
+            }
+        } catch (Exception ignored) {
+            return 1;
+        }
+        return 1;
+    }
+
+    private static ResourceLocation textureResourceLocation(Icon icon) {
+        Icon source = unwrapAnimation(icon);
+        if (source instanceof IResourceIcon resourceIcon) {
+            ResourceLocation id = resourceIcon.getResourceLocation();
+            String path = id.getPath();
+            if (path.startsWith("textures/")) {
+                return id;
+            }
+            return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "textures/" + path + ".png");
+        }
+        if (source instanceof ImageIcon imageIcon) {
+            String s = imageIcon.toString();
+            if (s.contains(":")) {
+                String[] parts = s.split(":", 2);
+                String path = parts[1];
+                if (!path.endsWith(".png")) {
+                    path = path + ".png";
+                }
+                if (!path.startsWith("textures/")) {
+                    path = "textures/" + path;
+                }
+                return ResourceLocation.fromNamespaceAndPath(parts[0], path);
+            }
+        }
+        return null;
     }
 
     private static PixelBuffer renderFallback(

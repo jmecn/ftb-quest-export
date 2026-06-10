@@ -92,6 +92,10 @@ public final class ChapterImageExporter {
                         imgJson.put("frameCount", entry.frameCount());
                         imgJson.put("frameWidth", entry.frameWidth());
                         imgJson.put("frameHeight", entry.frameHeight());
+                        int frameTime = ChapterImages.readAnimationFrameTime(source.getImage());
+                        if (frameTime > 0) {
+                            imgJson.put("frameTime", frameTime);
+                        }
                     }
                     imgJson.put("baked", entry.relative());
                 } catch (Exception ex) {

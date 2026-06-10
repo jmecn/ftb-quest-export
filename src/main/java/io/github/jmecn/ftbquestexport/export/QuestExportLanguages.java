@@ -1,8 +1,8 @@
 package io.github.jmecn.ftbquestexport.export;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import net.minecraft.client.Minecraft;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
  */
 public final class QuestExportLanguages {
 
-    private static final Logger LOGGER = LogManager.getLogger(QuestExportLanguages.class);
     private static final String PROPERTY = "quest.exportLanguages";
     private static final String FALLBACK = "en_us";
 
@@ -24,7 +23,7 @@ public final class QuestExportLanguages {
     public static Set<String> resolve() {
         String raw = System.getProperty(PROPERTY, "").trim();
         if (raw.isEmpty()) {
-            LOGGER.warn(
+            FtbQuestExportMod.LOGGER.warn(
                     "{} unset — exporting {} only; QuestBook-Modern CI should set this from Language enum",
                     PROPERTY,
                     FALLBACK);

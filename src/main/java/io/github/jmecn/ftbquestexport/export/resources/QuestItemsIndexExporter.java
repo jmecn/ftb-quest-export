@@ -2,9 +2,11 @@ package io.github.jmecn.ftbquestexport.export.resources;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -21,10 +24,8 @@ import java.util.TreeSet;
 public final class QuestItemsIndexExporter {
 
     public static final String ITEMS_INDEX_FILE = "items/index.json";
-    /** Same key as {@code minecraft-web-export} {@link io.github.jmecn.minecraftwebexport.export.emi.ItemsSearchIndexExporter}. */
     public static final String FLUID_REGISTRY_IDS_KEY = "fluidRegistryIds";
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private QuestItemsIndexExporter() {}
@@ -57,7 +58,35 @@ public final class QuestItemsIndexExporter {
         Files.writeString(out, json, StandardCharsets.UTF_8);
 
         int itemRefs = scan.getItems().size();
-        LOGGER.info("[items-index] {} item refs, {} fluid refs -> {}", itemRefs, fluids.size(), out);
+        FtbQuestExportMod.LOGGER.info("[items-index] {} item refs, {} fluid refs -> {}", itemRefs, fluids.size(), out);
         return new Result(itemRefs, fluids.size(), json.length());
+    }
+
+    /** Registry ids listed in {@code items/index.json} (all namespaces). */
+    public static Set<String> readIndexedItemIds(Path outputDir) throws IOException {
+        Path indexPath = outputDir.resolve(ITEMS_INDEX_FILE);
+        if (!Files.isRegularFile(indexPath)) {
+            return Set.of();
+        }
+        JsonObject index = JsonParser.parseString(Files.readString(indexPath)).getAsJsonObject();
+        Set<String> ids = new TreeSet<>();
+        for (Map.Entry<String, JsonElement> entry : index.entrySet()) {
+            String key = entry.getKey();
+            if ("schema".equals(key) || FLUID_REGISTRY_IDS_KEY.equals(key) || !entry.getValue().isJsonArray()) {
+                continue;
+            }
+            String namespace = entry.getKey();
+            for (JsonElement pathEl : entry.getValue().getAsJsonArray()) {
+                if (!pathEl.isJsonPrimitive()) {
+                    continue;
+                }
+                String path = pathEl.getAsString();
+                if (path == null || path.isEmpty()) {
+                    continue;
+                }
+                ids.add(path.contains(":") ? path : namespace + ":" + path);
+            }
+        }
+        return Set.copyOf(ids);
     }
 }

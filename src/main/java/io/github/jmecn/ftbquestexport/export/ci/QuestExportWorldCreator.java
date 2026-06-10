@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.ci;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
@@ -16,13 +18,10 @@ import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorPresets;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /** Creates or reopens the void world used by {@link QuestExportCiDriver}. */
 public final class QuestExportWorldCreator {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
 
     private QuestExportWorldCreator() {}
 
@@ -34,18 +33,18 @@ public final class QuestExportWorldCreator {
         try {
             return mc.getLevelSource().levelExists(saveName());
         } catch (Exception e) {
-            LOGGER.warn("levelExists({}) threw; assuming missing", saveName(), e);
+            FtbQuestExportMod.LOGGER.warn("levelExists({}) threw; assuming missing", saveName(), e);
             return false;
         }
     }
 
     public static void openExisting(Minecraft mc) {
-        LOGGER.info("opening existing world '{}'", saveName());
+        FtbQuestExportMod.LOGGER.info("opening existing world '{}'", saveName());
         mc.createWorldOpenFlows().loadLevel(mc.screen, saveName());
     }
 
     public static void createAndLoad(Minecraft mc) {
-        LOGGER.info("creating fresh void creative world '{}'", saveName());
+        FtbQuestExportMod.LOGGER.info("creating fresh void creative world '{}'", saveName());
 
         GameRules rules = new GameRules();
         rules.getRule(GameRules.RULE_DAYLIGHT).set(false, null);

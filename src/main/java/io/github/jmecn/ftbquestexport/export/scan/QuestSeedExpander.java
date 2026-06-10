@@ -1,13 +1,13 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,6 @@ import java.util.List;
 /** Expands tag refs collected during scan into concrete item/block seeds. */
 public final class QuestSeedExpander {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
 
     private QuestSeedExpander() {}
 
@@ -42,7 +41,7 @@ public final class QuestSeedExpander {
             }
             blockMembers += blocks.size();
         }
-        LOGGER.info("[seeds] expanded {} tags → {} item + {} block member refs",
+        FtbQuestExportMod.LOGGER.info("[seeds] expanded {} tags → {} item + {} block member refs",
                 scan.getTags().size(), itemMembers, blockMembers);
     }
 

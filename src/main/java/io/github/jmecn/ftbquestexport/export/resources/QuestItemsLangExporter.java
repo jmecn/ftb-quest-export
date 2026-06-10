@@ -7,10 +7,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
-import io.github.jmecn.minecraftwebexport.export.emi.ItemsSearchIndexExporter;
-import io.github.jmecn.minecraftwebexport.export.emi.RegistryLabelResolver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.github.jmecn.ftbquestexport.export.lang.RegistryLabelResolver;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +24,7 @@ import java.util.TreeSet;
 
 /**
  * Precomputes {@code items-lang/<locale>.json} for quest bundle item labels
- * (same schema as {@link ItemsSearchIndexExporter}).
+ * (schema version 2: {@code id}, {@code label}, {@code haystack} per item).
  */
 public final class QuestItemsLangExporter {
 
@@ -34,7 +32,6 @@ public final class QuestItemsLangExporter {
     public static final String COMPOSE_LANG_DIR = "compose-lang";
     public static final String DEFAULT_LANGUAGE = "en_us";
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final int PROGRESS_EVERY = 5000;
 
@@ -72,7 +69,7 @@ public final class QuestItemsLangExporter {
         Set<String> fluidRegistryIds = readFluidRegistryIds(outputDir);
         List<String> locales = resolveLocales(outputDir, languages);
         if (itemIds.isEmpty() || locales.isEmpty()) {
-            LOGGER.warn("[items-lang] skipped: {} items, {} locales", itemIds.size(), locales.size());
+            FtbQuestExportMod.LOGGER.warn("[items-lang] skipped: {} items, {} locales", itemIds.size(), locales.size());
             return Result.EMPTY;
         }
 
@@ -85,7 +82,7 @@ public final class QuestItemsLangExporter {
 
         for (String locale : locales) {
             String normalized = normalizeLocale(locale);
-            LOGGER.info("[items-lang] {}: building {} items ...", normalized, itemIds.size());
+            FtbQuestExportMod.LOGGER.info("[items-lang] {}: building {} items ...", normalized, itemIds.size());
             long startedAt = System.currentTimeMillis();
 
             Map<String, String> current = readLangTable(outputDir, normalized);
@@ -105,7 +102,7 @@ public final class QuestItemsLangExporter {
 
                 int n = i + 1;
                 if (n % PROGRESS_EVERY == 0) {
-                    LOGGER.info(
+                    FtbQuestExportMod.LOGGER.info(
                             "[items-lang] {}: {}/{} ({} ms)",
                             normalized,
                             n,
@@ -123,7 +120,7 @@ public final class QuestItemsLangExporter {
             Path out = searchRoot.resolve(normalized + ".json");
             Files.writeString(out, GSON.toJson(payload) + "\n", StandardCharsets.UTF_8);
             writtenLocales.add(normalized);
-            LOGGER.info(
+            FtbQuestExportMod.LOGGER.info(
                     "[items-lang] {}: {} items ({} ms) -> {}",
                     normalized,
                     itemIds.size(),
@@ -203,7 +200,7 @@ public final class QuestItemsLangExporter {
     }
 
     private static Set<String> readItemIds(Path outputDir) throws IOException {
-        return ItemsSearchIndexExporter.readIndexedItemIds(outputDir);
+        return QuestItemsIndexExporter.readIndexedItemIds(outputDir);
     }
 
     private static Set<String> readFluidRegistryIds(Path outputDir) throws IOException {

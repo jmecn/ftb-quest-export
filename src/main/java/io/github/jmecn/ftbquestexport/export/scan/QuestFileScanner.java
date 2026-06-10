@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import dev.ftb.mods.ftbquests.quest.BaseQuestFile;
 import dev.ftb.mods.ftbquests.quest.Chapter;
@@ -19,8 +21,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -30,7 +30,6 @@ import java.util.Map;
 /** Reads FTB Quests runtime graph into scan result + JSON-friendly maps. */
 public final class QuestFileScanner {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
 
     public record ScanBundle(
             QuestScanResult scan,
@@ -91,7 +90,7 @@ public final class QuestFileScanner {
         }
         index.put("chapters", chapterIndex);
 
-        LOGGER.info("[scan] {} chapters, {} quests, {} tasks",
+        FtbQuestExportMod.LOGGER.info("[scan] {} chapters, {} quests, {} tasks",
                 scan.getChapterCount(), scan.getQuestCount(), scan.getTaskCount());
         return new ScanBundle(scan, index, chapters);
     }
@@ -120,7 +119,7 @@ public final class QuestFileScanner {
         for (QuestLink link : chapter.getQuestLinks()) {
             Quest linked = link.getQuest().orElse(null);
             if (linked == null) {
-                LOGGER.warn("[scan] skipping quest link {} — linked quest not found", link.id);
+                FtbQuestExportMod.LOGGER.warn("[scan] skipping quest link {} — linked quest not found", link.id);
                 continue;
             }
             Map<String, Object> l = new LinkedHashMap<>();

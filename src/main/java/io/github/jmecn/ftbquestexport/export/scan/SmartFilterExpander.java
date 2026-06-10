@@ -1,10 +1,10 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
 /** Expands {@code ftbfiltersystem:smart_filter} strings to item id lists. */
 public final class SmartFilterExpander {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Pattern ITEM_TOKEN = Pattern.compile("item\\(([^)]+)\\)");
     /** {@code item_tag(...)}, {@code block_tag(...)}, {@code fluid_tag(...)}, legacy {@code tag(...)}. */
     private static final Pattern TAG_TOKEN = Pattern.compile(
@@ -82,7 +81,7 @@ public final class SmartFilterExpander {
                 if (!expanded.isEmpty()) {
                     return expanded;
                 }
-                LOGGER.warn("[filter] could not expand smart_filter: {}", raw);
+                FtbQuestExportMod.LOGGER.warn("[filter] could not expand smart_filter: {}", raw);
                 return List.of();
             }
         }

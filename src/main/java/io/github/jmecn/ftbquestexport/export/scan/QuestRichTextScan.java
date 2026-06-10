@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
@@ -8,8 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
  */
 public final class QuestRichTextScan {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
 
     private static final Pattern IMAGE_BLOCK = Pattern.compile("\\{image:([^}]+)\\}", Pattern.CASE_INSENSITIVE);
 
@@ -74,7 +73,7 @@ public final class QuestRichTextScan {
         }
         int added = scan.getTextures().size() - before;
         if (added > 0) {
-            LOGGER.info(
+            FtbQuestExportMod.LOGGER.info(
                     "[scan] rich-text lang closure added {} texture ref(s) from {} lang values ({} locales)",
                     added,
                     values.size(),

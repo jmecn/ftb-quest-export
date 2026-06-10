@@ -1,0 +1,103 @@
+package io.github.jmecn.ftbquestexport.export.lang;
+
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+/**
+ * After closure merge, fill missing {@code item|block|fluid.minecraft.*} using the same pack-layer
+ * lang merge as {@link LangMergerExporter} (not a single winning {@code listResources} file).
+ */
+final class VanillaMinecraftLangSupplement {
+
+    private VanillaMinecraftLangSupplement() {
+    }
+
+    static boolean isMinecraftRegistryLangKey(String key) {
+        return key != null
+                && (key.startsWith("item.minecraft.")
+                        || key.startsWith("block.minecraft.")
+                        || key.startsWith("fluid.minecraft."));
+    }
+
+    static int supplement(Map<String, String> merged, Minecraft client, String langCode, Set<String> onlyKeys) {
+        if (onlyKeys == null || onlyKeys.isEmpty()) {
+            return 0;
+        }
+        Set<String> missing = new TreeSet<>();
+        for (String key : onlyKeys) {
+            if (isMinecraftRegistryLangKey(key) && !merged.containsKey(key)) {
+                missing.add(key);
+            }
+        }
+        if (missing.isEmpty()) {
+            return 0;
+        }
+
+        List<String> locales = new ArrayList<>();
+        locales.add(langCode);
+        if (!"en_us".equals(langCode)) {
+            locales.add("en_us");
+        }
+
+        int added = 0;
+        for (String locale : locales) {
+            if (missing.isEmpty()) {
+                break;
+            }
+            added += copyMissingFromMinecraftPack(merged, client, locale + ".json", missing);
+        }
+
+        if (!missing.isEmpty()) {
+            String sample = missing.stream().limit(5).reduce((a, b) -> a + ", " + b).orElse("");
+            FtbQuestExportMod.LOGGER.info(
+                    "{} {} - {} minecraft registry lang keys still missing after vanilla supplement (e.g. {})",
+                    LangExportLog.LANG,
+                    langCode,
+                    missing.size(),
+                    sample);
+        } else if (added > 0) {
+            FtbQuestExportMod.LOGGER.info(
+                    "{} {} - supplemented {} minecraft registry lang keys from vanilla pack",
+                    LangExportLog.LANG,
+                    langCode,
+                    added);
+        }
+        return added;
+    }
+
+    private static int copyMissingFromMinecraftPack(
+            Map<String, String> merged, Minecraft client, String langFile, Set<String> missing) {
+        Map<ResourceLocation, List<Resource>> stacks =
+                LangMergerExporter.collectLangStacksForNamespaces(client, langFile, Set.of("minecraft"));
+        if (stacks.isEmpty()) {
+            return 0;
+        }
+        Map<String, String> minecraftMerged = new TreeMap<>();
+        LangMergerExporter.mergeLangStacksInto(minecraftMerged, stacks, null, new LangMergerExporter.MergeStats());
+        int added = 0;
+        Set<String> found = new TreeSet<>();
+        for (String key : missing) {
+            if (merged.containsKey(key)) {
+                continue;
+            }
+            String value = minecraftMerged.get(key);
+            if (value == null) {
+                continue;
+            }
+            merged.put(key, value);
+            found.add(key);
+            added++;
+        }
+        missing.removeAll(found);
+        return added;
+    }
+}

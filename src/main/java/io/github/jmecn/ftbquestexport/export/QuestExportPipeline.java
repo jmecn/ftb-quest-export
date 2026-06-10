@@ -1,28 +1,28 @@
 package io.github.jmecn.ftbquestexport.export;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jmecn.ftbquestexport.export.resources.ExportDirectoryStats;
 import io.github.jmecn.ftbquestexport.export.resources.QuestClosureResourceExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestFluidExporter;
+import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestIconExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemNameKeysExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemsIndexExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemsLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestTagMembersExporter;
-import io.github.jmecn.minecraftwebexport.export.emi.LangClosureKeys;
+import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import io.github.jmecn.ftbquestexport.export.scan.QuestSeedExpander;
 import io.github.jmecn.ftbquestexport.export.write.QuestJsonWriter;
-import io.github.jmecn.minecraftwebexport.export.emi.ItemIconRendererExporter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,7 +35,6 @@ import java.util.Set;
 /** Main quest-export pipeline. */
 public final class QuestExportPipeline {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private QuestExportPipeline() {}
@@ -61,12 +60,12 @@ public final class QuestExportPipeline {
             if (server != null) {
                 QuestSeedExpander.expandTags(server, scan);
             } else {
-                LOGGER.warn("[export] no integrated server — skipping tag seed expansion");
+                FtbQuestExportMod.LOGGER.warn("[export] no integrated server — skipping tag seed expansion");
             }
             manifest.put("stats", scan.toStatsMap());
-            LOGGER.info("[export] quests JSON written under {}", outputDir.resolve("quests").toAbsolutePath());
+            FtbQuestExportMod.LOGGER.info("[export] quests JSON written under {}", outputDir.resolve("quests").toAbsolutePath());
         } catch (Throwable t) {
-            LOGGER.error("quest scan failed", t);
+            FtbQuestExportMod.LOGGER.error("quest scan failed", t);
             manifest.put("error", t.getClass().getSimpleName() + ": " + t.getMessage());
         }
 
@@ -78,7 +77,7 @@ public final class QuestExportPipeline {
                         "memberRefs", tags.totalMemberRefs(),
                         "bytes", tags.bytes()));
             } catch (IOException e) {
-                LOGGER.error("tag-members export failed", e);
+                FtbQuestExportMod.LOGGER.error("tag-members export failed", e);
             }
         }
 
@@ -89,26 +88,26 @@ public final class QuestExportPipeline {
                 resources = QuestClosureResourceExporter.export(outputDir, client, scan);
                 manifest.put("resources", resourceStats(resources));
             } catch (Throwable t) {
-                LOGGER.error("resource closure export failed", t);
+                FtbQuestExportMod.LOGGER.error("resource closure export failed", t);
                 manifest.put("resourceExportError", t.getClass().getSimpleName() + ": " + t.getMessage());
             }
         }
 
-        if (scan != null && ItemIconRendererExporter.isEnabled()) {
+        if (scan != null && QuestIconExporter.isEnabled()) {
             try {
-                QuestIconExporter.Result icons = QuestIconExporter.export(
+                QuestItemIconExporter.Result icons = QuestIconExporter.export(
                         outputDir.resolve("assets/icons"),
                         client,
                         scan.getItems(),
-                        Map.of());
+                        scan.getFluids());
                 manifest.put("icons", Map.of(
-                        "itemsRendered", icons.atlas().itemsWritten(),
-                        "itemsSliced", icons.slice().itemsSliced(),
-                        "sliceFailures", icons.slice().failures(),
-                        "itemPngBytes", icons.slice().pngBytes(),
-                        "renderFailures", icons.atlas().failures()));
+                        "itemsRendered", icons.itemsRendered(),
+                        "fluidsRendered", icons.fluidsRendered(),
+                        "fluidsSkipped", icons.fluidsSkipped(),
+                        "failures", icons.failures(),
+                        "pngBytes", icons.pngBytes()));
             } catch (Throwable t) {
-                LOGGER.error("icon export failed", t);
+                FtbQuestExportMod.LOGGER.error("icon export failed", t);
                 manifest.put("iconExportError", t.getClass().getSimpleName() + ": " + t.getMessage());
             }
         }
@@ -118,7 +117,7 @@ public final class QuestExportPipeline {
                 QuestFluidExporter.Result fluids = QuestFluidExporter.export(outputDir, scan);
                 manifest.put("fluids", Map.of("entries", fluids.fluidsWritten(), "bytes", fluids.bytes()));
             } catch (IOException e) {
-                LOGGER.error("fluid export failed", e);
+                FtbQuestExportMod.LOGGER.error("fluid export failed", e);
             }
         }
 
@@ -130,7 +129,7 @@ public final class QuestExportPipeline {
                         "fluidRefs", itemsIndex.fluidRefs(),
                         "bytes", itemsIndex.bytes()));
             } catch (IOException e) {
-                LOGGER.error("items-index export failed", e);
+                FtbQuestExportMod.LOGGER.error("items-index export failed", e);
             }
         }
 
@@ -150,7 +149,7 @@ public final class QuestExportPipeline {
                         "mode", langKeys.isEmpty() ? "full" : "closure",
                         "closureKeys", lang.closureKeysRequested()));
             } catch (IOException e) {
-                LOGGER.error("lang export failed", e);
+                FtbQuestExportMod.LOGGER.error("lang export failed", e);
             }
         }
 
@@ -161,7 +160,7 @@ public final class QuestExportPipeline {
                         "registryIds", nameKeys.registryIds(),
                         "fluids", nameKeys.fluidIds()));
             } catch (IOException e) {
-                LOGGER.error("item name-keys export failed", e);
+                FtbQuestExportMod.LOGGER.error("item name-keys export failed", e);
             }
         }
 
@@ -175,7 +174,7 @@ public final class QuestExportPipeline {
                         "items", itemsLang.itemCount(),
                         "files", itemsLang.locales()));
             } catch (IOException e) {
-                LOGGER.error("items-lang export failed", e);
+                FtbQuestExportMod.LOGGER.error("items-lang export failed", e);
             }
         }
 
@@ -187,7 +186,7 @@ public final class QuestExportPipeline {
             ExportDirectoryStats.Summary size = ExportDirectoryStats.summarize(outputDir);
             manifest.put("exportSize", ExportDirectoryStats.toMap(size));
         } catch (IOException e) {
-            LOGGER.warn("[export] could not summarize export directory size", e);
+            FtbQuestExportMod.LOGGER.warn("[export] could not summarize export directory size", e);
         }
 
         writeManifest(outputDir, manifest);

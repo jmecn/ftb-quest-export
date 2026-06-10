@@ -50,10 +50,3 @@ mandatory = true
 versionRange = "[9.0.8,)"
 ordering = "NONE"
 side = "BOTH"
-
-[[dependencies.${mod_id}]]
-modId = "minecraft_web_export"
-mandatory = true
-versionRange = "[${mwe_version},)"
-ordering = "AFTER"
-side = "CLIENT"

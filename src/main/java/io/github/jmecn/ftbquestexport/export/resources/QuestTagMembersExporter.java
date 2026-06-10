@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.resources;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
@@ -10,8 +12,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,7 +26,6 @@ import java.util.TreeSet;
 /** Writes {@code extras/tag-members.json} using integrated server tag data. */
 public final class QuestTagMembersExporter {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private QuestTagMembersExporter() {}
@@ -85,7 +84,7 @@ public final class QuestTagMembersExporter {
         Files.createDirectories(out.getParent());
         String json = GSON.toJson(root);
         Files.writeString(out, json);
-        LOGGER.info("[tag-members] {} tags, {} member refs", tagIds.size(), memberRefs);
+        FtbQuestExportMod.LOGGER.info("[tag-members] {} tags, {} member refs", tagIds.size(), memberRefs);
         return new Result(tagIds.size(), memberRefs, json.length());
     }
 

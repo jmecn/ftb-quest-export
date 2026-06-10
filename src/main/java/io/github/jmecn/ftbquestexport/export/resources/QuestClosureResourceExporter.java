@@ -1,11 +1,11 @@
 package io.github.jmecn.ftbquestexport.export.resources;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -18,7 +18,6 @@ import java.util.Set;
  */
 public final class QuestClosureResourceExporter {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
 
     private QuestClosureResourceExporter() {}
 
@@ -41,7 +40,7 @@ public final class QuestClosureResourceExporter {
         Set<ResourceLocation> textures = TextureRefResolver.resolveAll(scan.getTextures());
         ExportCounters assets = writeTextures(rm, assetsRoot, textures, excluded);
 
-        LOGGER.info(
+        FtbQuestExportMod.LOGGER.info(
                 "[textures] {} scan refs → {} PNG locations, wrote {} files",
                 textureRefCount,
                 textures.size(),
@@ -85,7 +84,7 @@ public final class QuestClosureResourceExporter {
                 }
             } catch (IOException e) {
                 counters.failures++;
-                LOGGER.warn("[textures] failed to write {}: {}", id, e.getMessage());
+                FtbQuestExportMod.LOGGER.warn("[textures] failed to write {}: {}", id, e.getMessage());
             }
         }
         return counters;

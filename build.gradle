@@ -33,21 +33,10 @@ repositories {
         url = 'https://maven.architectury.dev/'
         content { includeGroup 'dev.architectury' }
     }
-    maven {
-        name = 'GitHubPackagesMinecraftWebExport'
-        url = uri("https://maven.pkg.github.com/jmecn/minecraft-web-export")
-        credentials {
-            username = findProperty('gpr.user') ?: System.getenv('GITHUB_ACTOR')
-            password = findProperty('gpr.key') ?: System.getenv('GITHUB_TOKEN')
-        }
-    }
 }
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.13.1'
-
-    modCompileOnly "io.github.jmecn:minecraft-web-export:${mwe_version}"
-    modRuntimeOnly "io.github.jmecn:minecraft-web-export:${mwe_version}"
 
     modCompileOnly "dev.ftb.mods:ftb-library-forge:${ftb_library_version}"
     modRuntimeOnly "dev.ftb.mods:ftb-library-forge:${ftb_library_version}"
@@ -102,7 +91,6 @@ legacyForge {
 tasks.withType(ProcessResources).configureEach {
     def resourceProps = [
             minecraft_version: minecraft_version,
-            mwe_version      : mwe_version,
             mod_authors      : mod_authors,
             mod_description  : mod_description,
             mod_id           : mod_id,

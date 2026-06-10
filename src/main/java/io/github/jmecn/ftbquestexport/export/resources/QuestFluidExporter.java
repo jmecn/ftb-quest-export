@@ -1,13 +1,13 @@
 package io.github.jmecn.ftbquestexport.export.resources;
 
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,7 +17,6 @@ import java.util.Map;
 
 public final class QuestFluidExporter {
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private QuestFluidExporter() {}
@@ -45,7 +44,7 @@ public final class QuestFluidExporter {
         Files.createDirectories(out.getParent());
         String json = GSON.toJson(root);
         Files.writeString(out, json);
-        LOGGER.info("[fluids] wrote {} entries ({} bytes)", root.size(), json.length());
+        FtbQuestExportMod.LOGGER.info("[fluids] wrote {} entries ({} bytes)", root.size(), json.length());
         return new Result(root.size(), json.length());
     }
 }

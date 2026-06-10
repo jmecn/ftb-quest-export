@@ -5,10 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.github.jmecn.minecraftwebexport.export.emi.RegistryLangKeys;
+import io.github.jmecn.ftbquestexport.export.lang.RegistryLangKeys;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +21,6 @@ public final class QuestItemNameKeysExporter {
 
     public static final String ITEM_NAME_KEYS_FILE = "items/name-keys.json";
 
-    private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private QuestItemNameKeysExporter() {}
@@ -37,13 +35,13 @@ public final class QuestItemNameKeysExporter {
 
     public static Result export(Path outputDir, Minecraft client) throws IOException {
         if (client == null || client.level == null) {
-            LOGGER.warn("[name-keys] skipped: no client level");
+            FtbQuestExportMod.LOGGER.warn("[name-keys] skipped: no client level");
             return Result.EMPTY;
         }
 
         Path indexPath = outputDir.resolve(QuestItemsIndexExporter.ITEMS_INDEX_FILE);
         if (!Files.isRegularFile(indexPath)) {
-            LOGGER.warn("[name-keys] skipped: missing {}", QuestItemsIndexExporter.ITEMS_INDEX_FILE);
+            FtbQuestExportMod.LOGGER.warn("[name-keys] skipped: missing {}", QuestItemsIndexExporter.ITEMS_INDEX_FILE);
             return Result.EMPTY;
         }
 
@@ -98,7 +96,7 @@ public final class QuestItemNameKeysExporter {
         Files.createDirectories(out.getParent());
         Files.writeString(out, GSON.toJson(root) + "\n", StandardCharsets.UTF_8);
 
-        LOGGER.info("[name-keys] {} registry ids ({} fluids) -> {}", items.size(), fluidCount, out);
+        FtbQuestExportMod.LOGGER.info("[name-keys] {} registry ids ({} fluids) -> {}", items.size(), fluidCount, out);
         return new Result(items.size() - fluidCount, fluidCount);
     }
 

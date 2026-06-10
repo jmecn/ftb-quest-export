@@ -134,6 +134,19 @@ public final class LangClosureKeys {
         addComposedMaterialFluidKeys(into, registryId);
     }
 
+    /** Observation / chapter-image block refs — {@code block.*} plus item/fluid fallbacks. */
+    public static void addForBlock(Set<String> into, String registryId) {
+        addLookupKeys(into, RegistryLangKeys.itemLookupKeys(registryId));
+    }
+
+    /** Observation entity refs — {@code entity.*}. */
+    public static void addForEntity(Set<String> into, String registryId) {
+        String dotted = RegistryLangKeys.dottedRegistryId(registryId);
+        if (!dotted.isEmpty()) {
+            into.add("entity." + dotted);
+        }
+    }
+
     private static void addLookupKeys(Set<String> into, java.util.List<String> keys) {
         for (String key : keys) {
             if (key != null && !key.isBlank()) {
@@ -295,6 +308,22 @@ public final class LangClosureKeys {
         }
         for (String fluidId : fluidIds == null ? Set.<String>of() : fluidIds) {
             addForFluid(merged, fluidId);
+        }
+        return Set.copyOf(merged);
+    }
+
+    public static Set<String> mergeBlockLangKeys(Set<String> seedLangKeys, Set<String> blockIds) {
+        Set<String> merged = new TreeSet<>(seedLangKeys == null ? Set.of() : seedLangKeys);
+        for (String blockId : blockIds == null ? Set.<String>of() : blockIds) {
+            addForBlock(merged, blockId);
+        }
+        return Set.copyOf(merged);
+    }
+
+    public static Set<String> mergeEntityLangKeys(Set<String> seedLangKeys, Set<String> entityIds) {
+        Set<String> merged = new TreeSet<>(seedLangKeys == null ? Set.of() : seedLangKeys);
+        for (String entityId : entityIds == null ? Set.<String>of() : entityIds) {
+            addForEntity(merged, entityId);
         }
         return Set.copyOf(merged);
     }

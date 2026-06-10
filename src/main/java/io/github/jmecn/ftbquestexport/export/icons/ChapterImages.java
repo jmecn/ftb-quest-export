@@ -157,11 +157,9 @@ public final class ChapterImages {
             frameW = targetPx;
             frameH = targetPx;
             strip = new PixelBuffer(frameW, frameH * frameCount);
-            // Keep animated strips unmodulated; React applies alpha/tint at draw time like FTB AtlasSpriteIcon.
-            Color4I frameMod = frameCount > 1 ? Color4I.WHITE : mod;
             for (int i = 0; i < frameCount; i++) {
                 PixelBuffer scaled = scaleFrame(frames.get(i), frameW, frameH);
-                modulate(scaled, frameMod);
+                modulate(scaled, mod);
                 strip.setRGB(0, i * frameH, scaled);
             }
         } else {

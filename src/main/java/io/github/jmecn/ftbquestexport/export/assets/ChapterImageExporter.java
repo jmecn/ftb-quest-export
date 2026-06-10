@@ -103,6 +103,9 @@ public final class ChapterImageExporter {
                         }
                     }
                     imgJson.put("baked", entry.relative());
+                    // Vertex color is baked into PNG; web uses baked assets only (no runtime alpha/tint).
+                    imgJson.remove("alpha");
+                    imgJson.remove("color");
                 } catch (Exception ex) {
                     failures++;
                     FtbQuestExportMod.LOGGER.warn(

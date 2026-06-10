@@ -18,6 +18,10 @@ public final class QuestPlainText {
     private QuestPlainText() {}
 
     public static String textToPlain(Map<String, String> lang, String text) {
+        return textToPlain(lang, null, text);
+    }
+
+    public static String textToPlain(Map<String, String> lang, Map<String, String> fallbackLang, String text) {
         if (text == null || text.isBlank()) {
             return "";
         }
@@ -27,15 +31,15 @@ public final class QuestPlainText {
             if (key.startsWith("image:") || Quest.PAGEBREAK_CODE.equals(key)) {
                 return "";
             }
-            String value = lang.get(key);
+            String value = resolveLangValue(lang, fallbackLang, key);
             if (value != null) {
-                return textToPlain(lang, value);
+                return textToPlain(lang, fallbackLang, value);
             }
         }
 
         StringBuilder out = new StringBuilder();
         for (String line : text.split("\n", -1)) {
-            String plain = lineToPlain(lang, line);
+            String plain = lineToPlain(lang, fallbackLang, line);
             if (!plain.isEmpty()) {
                 if (!out.isEmpty()) {
                     out.append(' ');
@@ -47,6 +51,10 @@ public final class QuestPlainText {
     }
 
     public static String lineToPlain(Map<String, String> lang, String line) {
+        return lineToPlain(lang, null, line);
+    }
+
+    public static String lineToPlain(Map<String, String> lang, Map<String, String> fallbackLang, String line) {
         if (line == null || line.isBlank()) {
             return "";
         }
@@ -64,11 +72,28 @@ public final class QuestPlainText {
             }
         }
 
-        Component parsed = TextComponentParser.parse(line, inner -> substituteComponent(lang, inner));
+        Component parsed = TextComponentParser.parse(line, inner -> substituteComponent(lang, fallbackLang, inner));
         return normalizeWhitespace(parsed.getString());
     }
 
-    private static Component substituteComponent(Map<String, String> lang, String inner) {
+    private static String resolveLangValue(
+            Map<String, String> lang,
+            Map<String, String> fallbackLang,
+            String key) {
+        String value = lang.get(key);
+        if (value != null) {
+            return value;
+        }
+        if (fallbackLang != null) {
+            return fallbackLang.get(key);
+        }
+        return null;
+    }
+
+    private static Component substituteComponent(
+            Map<String, String> lang,
+            Map<String, String> fallbackLang,
+            String inner) {
         if (inner.isEmpty() || inner.startsWith("@")) {
             return Component.empty();
         }
@@ -78,13 +103,13 @@ public final class QuestPlainText {
                 return Component.empty();
             }
             if (props.containsKey("open_url") && props.containsKey("text")) {
-                return Component.literal(lineToPlain(lang, props.get("text")));
+                return Component.literal(lineToPlain(lang, fallbackLang, props.get("text")));
             }
             return Component.empty();
         }
-        String value = lang.get(inner);
+        String value = resolveLangValue(lang, fallbackLang, inner);
         if (value != null) {
-            return Component.literal(textToPlain(lang, value));
+            return Component.literal(textToPlain(lang, fallbackLang, value));
         }
         return Component.empty();
     }

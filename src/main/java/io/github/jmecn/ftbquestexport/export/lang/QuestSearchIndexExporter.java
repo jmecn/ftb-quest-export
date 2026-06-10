@@ -43,6 +43,7 @@ public final class QuestSearchIndexExporter {
         }
 
         Map<String, String> nameKeys = readNameKeys(outputDir);
+        Map<String, String> enUsLang = readLangTable(outputDir, QuestExportConstants.FALLBACK_LOCALE);
         Path searchRoot = outputDir.resolve(QuestExportConstants.SEARCH_INDEX_DIR);
         Files.createDirectories(searchRoot);
 
@@ -51,11 +52,14 @@ public final class QuestSearchIndexExporter {
 
         for (String locale : locales) {
             Map<String, String> lang = readLangTable(outputDir, locale);
-            List<Map<String, String>> rows = buildRows(chapters, lang, nameKeys);
+            Map<String, String> fallbackLang = QuestExportConstants.FALLBACK_LOCALE.equals(locale)
+                    ? null
+                    : enUsLang;
+            List<Map<String, String>> rows = buildRows(chapters, lang, fallbackLang, nameKeys);
             questsWritten = Math.max(questsWritten, rows.size());
 
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("schema", 1);
+            payload.put("schema", 2);
             payload.put("locale", locale);
             payload.put("questCount", rows.size());
             payload.put("quests", rows);
@@ -77,11 +81,14 @@ public final class QuestSearchIndexExporter {
     private static List<Map<String, String>> buildRows(
             Map<String, Map<String, Object>> chapters,
             Map<String, String> lang,
+            Map<String, String> fallbackLang,
             Map<String, String> nameKeys) {
         List<Map<String, String>> rows = new ArrayList<>();
         for (Map.Entry<String, Map<String, Object>> chapterEntry : chapters.entrySet()) {
             String chapterFilename = chapterEntry.getKey();
-            Object questsRaw = chapterEntry.getValue().get("quests");
+            Map<String, Object> chapter = chapterEntry.getValue();
+            String chapterTitle = resolveChapterTitle(chapter, chapterFilename, lang, fallbackLang);
+            Object questsRaw = chapter.get("quests");
             if (!(questsRaw instanceof List<?> questList)) {
                 continue;
             }
@@ -94,13 +101,15 @@ public final class QuestSearchIndexExporter {
                     continue;
                 }
 
+                String title = resolveQuestTitle(quest, lang, fallbackLang, nameKeys);
+
                 StringBuilder plain = new StringBuilder();
-                appendField(plain, lang, stringValue(quest.get("title")));
-                appendField(plain, lang, stringValue(quest.get("subtitle")));
-                appendDescription(plain, lang, quest.get("description"));
+                appendField(plain, lang, fallbackLang, stringValue(quest.get("title")));
+                appendField(plain, lang, fallbackLang, stringValue(quest.get("subtitle")));
+                appendDescription(plain, lang, fallbackLang, quest.get("description"));
 
                 if (!quest.containsKey("title") && quest.get("titleItem") instanceof String titleItem) {
-                    appendField(plain, lang, resolveItemLabel(lang, nameKeys, titleItem));
+                    appendField(plain, lang, fallbackLang, resolveItemLabel(lang, fallbackLang, nameKeys, titleItem));
                 }
 
                 String content = QuestPlainText.toSearchContent(plain.toString());
@@ -111,6 +120,10 @@ public final class QuestSearchIndexExporter {
                 Map<String, String> row = new LinkedHashMap<>();
                 row.put("id", id);
                 row.put("chapter", chapterFilename);
+                row.put("chapterTitle", chapterTitle);
+                if (!title.isEmpty()) {
+                    row.put("title", title);
+                }
                 row.put("content", content);
                 rows.add(row);
             }
@@ -118,11 +131,43 @@ public final class QuestSearchIndexExporter {
         return rows;
     }
 
-    private static void appendField(StringBuilder target, Map<String, String> lang, String raw) {
+    private static String resolveChapterTitle(
+            Map<String, Object> chapter,
+            String chapterFilename,
+            Map<String, String> lang,
+            Map<String, String> fallbackLang) {
+        String raw = stringValue(chapter.get("title"));
+        if (raw == null || raw.isBlank()) {
+            return chapterFilename;
+        }
+        String plain = QuestPlainText.textToPlain(lang, fallbackLang, raw);
+        return plain.isEmpty() ? chapterFilename : plain;
+    }
+
+    private static String resolveQuestTitle(
+            Map<?, ?> quest,
+            Map<String, String> lang,
+            Map<String, String> fallbackLang,
+            Map<String, String> nameKeys) {
+        String raw = stringValue(quest.get("title"));
+        if (raw != null && !raw.isBlank()) {
+            return QuestPlainText.textToPlain(lang, fallbackLang, raw);
+        }
+        if (quest.get("titleItem") instanceof String titleItem) {
+            return resolveItemLabel(lang, fallbackLang, nameKeys, titleItem);
+        }
+        return "";
+    }
+
+    private static void appendField(
+            StringBuilder target,
+            Map<String, String> lang,
+            Map<String, String> fallbackLang,
+            String raw) {
         if (raw == null || raw.isBlank()) {
             return;
         }
-        String plain = QuestPlainText.textToPlain(lang, raw);
+        String plain = QuestPlainText.textToPlain(lang, fallbackLang, raw);
         if (plain.isEmpty()) {
             return;
         }
@@ -132,18 +177,22 @@ public final class QuestSearchIndexExporter {
         target.append(plain);
     }
 
-    private static void appendDescription(StringBuilder target, Map<String, String> lang, Object description) {
+    private static void appendDescription(
+            StringBuilder target,
+            Map<String, String> lang,
+            Map<String, String> fallbackLang,
+            Object description) {
         if (description == null) {
             return;
         }
         if (description instanceof String text) {
-            appendField(target, lang, text);
+            appendField(target, lang, fallbackLang, text);
             return;
         }
         if (description instanceof List<?> lines) {
             for (Object line : lines) {
                 if (line instanceof String text) {
-                    String plain = QuestPlainText.lineToPlain(lang, text);
+                    String plain = QuestPlainText.lineToPlain(lang, fallbackLang, text);
                     if (plain.isEmpty()) {
                         continue;
                     }
@@ -158,20 +207,27 @@ public final class QuestSearchIndexExporter {
 
     private static String resolveItemLabel(
             Map<String, String> lang,
+            Map<String, String> fallbackLang,
             Map<String, String> nameKeys,
             String itemId) {
         String bare = RegistryLangKeys.normalizeRegistryId(itemId);
         String descKey = nameKeys.get(bare);
         if (descKey != null) {
             String fromDesc = lang.get(descKey);
+            if (fromDesc == null || fromDesc.isBlank()) {
+                fromDesc = fallbackLang != null ? fallbackLang.get(descKey) : null;
+            }
             if (fromDesc != null && !fromDesc.isBlank()) {
-                return QuestPlainText.textToPlain(lang, fromDesc);
+                return QuestPlainText.textToPlain(lang, fallbackLang, fromDesc);
             }
         }
         String itemKey = RegistryLangKeys.itemKey(bare);
         String fromItem = lang.get(itemKey);
+        if (fromItem == null || fromItem.isBlank()) {
+            fromItem = fallbackLang != null ? fallbackLang.get(itemKey) : null;
+        }
         if (fromItem != null && !fromItem.isBlank()) {
-            return QuestPlainText.textToPlain(lang, fromItem);
+            return QuestPlainText.textToPlain(lang, fallbackLang, fromItem);
         }
         String segment = bare.contains(":") ? bare.substring(bare.indexOf(':') + 1) : bare;
         return segment.replace('_', ' ');

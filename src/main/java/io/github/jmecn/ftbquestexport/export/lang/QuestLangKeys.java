@@ -5,11 +5,11 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Lang keys to pull into {@code lang/<locale>.json} closure for quest-referenced items/fluids.
+ * Lang keys to merge into {@code lang/<locale>.json} for quest-referenced items/fluids.
  * GT material / tagprefix resolution for display names is done in QuestBook
  * ({@code gtceu-composed-registry.ts}), not at export time.
  */
-public final class LangClosureKeys {
+public final class QuestLangKeys {
 
     private static final String GTCEU = "gtceu";
     private static final java.util.Set<String> COMPOSED_MATERIAL_NAMESPACES = java.util.Set.of(GTCEU, "tfg", "greate");
@@ -121,7 +121,7 @@ public final class LangClosureKeys {
         return "%s_" + toolName;
     }
 
-    private LangClosureKeys() {
+    private QuestLangKeys() {
     }
 
     public static void addForItem(Set<String> into, String registryId) {
@@ -177,7 +177,7 @@ public final class LangClosureKeys {
             into.add("material." + namespace + "." + path.substring(0, path.length() - "_bud_indicator".length()));
             return;
         }
-        if (addGtToolClosureKeys(into, namespace, path)) {
+        if (addGtToolLangKeys(into, namespace, path)) {
             return;
         }
         for (var entry : GTCEU_TAG_PREFIX_PATTERNS.entrySet()) {
@@ -236,7 +236,7 @@ public final class LangClosureKeys {
         return colon >= 0 ? bare.substring(colon + 1) : bare;
     }
 
-    private static boolean addGtToolClosureKeys(Set<String> into, String namespace, String path) {
+    private static boolean addGtToolLangKeys(Set<String> into, String namespace, String path) {
         java.util.Set<String> toolNames = new java.util.LinkedHashSet<>(GT_TOOL_ID_FORMAT_OVERRIDES.keySet());
         toolNames.addAll(GT_TOOL_NAMES);
         toolNames.addAll(GTMUTILS_ELECTRIC_TOOL_NAMES);
@@ -299,8 +299,8 @@ public final class LangClosureKeys {
         return null;
     }
 
-    /** Merge seed lang keys with closure item/fluid registry lookups. */
-    public static Set<String> mergeClosureLangKeys(
+    /** Merge seed lang keys with item/fluid registry lookups. */
+    public static Set<String> mergeItemFluidLangKeys(
             Set<String> seedLangKeys, Set<String> itemIds, Set<String> fluidIds) {
         Set<String> merged = new TreeSet<>(seedLangKeys == null ? Set.of() : seedLangKeys);
         for (String itemId : itemIds == null ? Set.<String>of() : itemIds) {
@@ -328,7 +328,7 @@ public final class LangClosureKeys {
         return Set.copyOf(merged);
     }
 
-    /** {@code tag.item.*} / {@code tag.block.*} / {@code tag.fluid.*} for scoped {@code emi/lang/}. */
+    /** {@code tag.item.*} / {@code tag.block.*} / {@code tag.fluid.*} lang keys. */
     public static void addForTag(Set<String> into, String tagId) {
         if (tagId == null || tagId.isBlank()) {
             return;

@@ -40,14 +40,14 @@ public final class QuestRichTextScan {
         }
     }
 
-    /** Scan resolved lang strings for embedded rich text before texture closure. */
-    public static void enrichFromLangClosure(Minecraft client, QuestScanResult scan) {
+    /** Scan resolved lang strings for embedded rich text before copying textures. */
+    public static void enrichTexturesFromLang(Minecraft client, QuestScanResult scan) {
         Set<String> wanted = scan.getLangKeys();
         if (wanted.isEmpty()) {
             return;
         }
         Map<String, String> values = new LinkedHashMap<>();
-        for (String lang : QuestExportLanguages.closureLanguages(client)) {
+        for (String lang : QuestExportLanguages.exportLocales(client)) {
             String langFile = lang + ".json";
             readLangValues(client.getResourceManager(), langFile, wanted).forEach(values::putIfAbsent);
             var server = client.getSingleplayerServer();
@@ -62,10 +62,10 @@ public final class QuestRichTextScan {
         int added = scan.getTextures().size() - before;
         if (added > 0) {
             FtbQuestExportMod.LOGGER.info(
-                    "[scan] rich-text lang closure added {} texture ref(s) from {} lang values ({} locales)",
+                    "[scan] rich-text lang scan added {} texture ref(s) from {} lang values ({} locales)",
                     added,
                     values.size(),
-                    QuestExportLanguages.closureLanguages(client).size());
+                    QuestExportLanguages.exportLocales(client).size());
         }
     }
 

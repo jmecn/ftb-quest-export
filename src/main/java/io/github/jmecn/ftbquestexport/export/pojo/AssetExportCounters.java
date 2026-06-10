@@ -1,6 +1,6 @@
 package io.github.jmecn.ftbquestexport.export.pojo;
 
-/** Mutable accumulator while writing asset closure files. */
+/** Mutable accumulator while writing exported asset files. */
 public final class AssetExportCounters {
 
     public int files;

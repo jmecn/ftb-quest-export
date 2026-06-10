@@ -25,7 +25,7 @@ public final class QuestExportConstants {
     public static final String EXPORT_LANGUAGES_PROPERTY = "quest.exportLanguages";
     public static final String FALLBACK_LOCALE = "en_us";
 
-    // —— Asset closure ——
+    // —— Asset export ——
     public static final String EXPORT_EXCLUDED_NAMESPACES_PROPERTY = "quest-export.exportExcludedNamespaces";
     public static final Set<String> DEFAULT_EXCLUDED_NAMESPACES = Set.of("additionalplacements");
 

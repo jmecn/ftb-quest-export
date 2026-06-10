@@ -4,6 +4,6 @@ public record LangExportResult(
         int languagesWritten,
         long totalBytes,
         int duplicateKeyWarnings,
-        int closureKeysRequested,
+        int langKeysRequested,
         int keysSkipped,
         int keysPerLanguage) {}

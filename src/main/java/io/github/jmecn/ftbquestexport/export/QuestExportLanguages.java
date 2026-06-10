@@ -41,7 +41,7 @@ public final class QuestExportLanguages {
         return languages.stream().sorted().toList();
     }
 
-    public static Collection<String> closureLanguages(Minecraft client) {
+    public static Collection<String> exportLocales(Minecraft client) {
         Set<String> configured = resolve();
         if (configured != null) {
             return configured;

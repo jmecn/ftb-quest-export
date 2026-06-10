@@ -54,7 +54,6 @@ public final class LangMergerExporter {
         int duplicateWarnings = 0;
         int keysSkipped = 0;
         int keysPerLanguage = 0;
-        String mode = onlyKeys == null ? "full" : "closure";
 
         for (String langCode : languages) {
             String langFile = langCode + ".json";
@@ -81,10 +80,9 @@ public final class LangMergerExporter {
 
             if (merged.isEmpty()) {
                 FtbQuestExportMod.LOGGER.warn(
-                        "{} {} - 0 keys after merge ({}, {} lang file stacks, {} pack layers)",
+                        "{} {} - 0 keys after merge ({} lang file stacks, {} pack layers)",
                         QuestExportConstants.LOG_PREFIX_LANG,
                         langCode,
-                        mode,
                         stacks.size(),
                         stats.resourceLayersRead);
                 continue;
@@ -99,18 +97,17 @@ public final class LangMergerExporter {
             keysSkipped += stats.keysSkipped;
             duplicateWarnings += stats.duplicateKeyWarnings;
             FtbQuestExportMod.LOGGER.info(
-                    "{} {} - {} keys from {} lang file stacks ({} pack layers, {})",
+                    "{} {} - {} keys from {} lang file stacks ({} pack layers)",
                     QuestExportConstants.LOG_PREFIX_LANG,
                     langCode,
                     merged.size(),
                     stacks.size(),
-                    stats.resourceLayersRead,
-                    mode);
+                    stats.resourceLayersRead);
         }
 
         if (onlyKeys != null) {
             FtbQuestExportMod.LOGGER.info(
-                    "{} closure key filter: {} requested, ~{} keys per language file, {} entries skipped while scanning",
+                    "{} lang key filter: {} requested, ~{} keys per language file, {} entries skipped while scanning",
                     QuestExportConstants.LOG_PREFIX_LANG,
                     onlyKeys.size(),
                     keysPerLanguage,

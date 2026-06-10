@@ -15,7 +15,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * After closure merge, fill missing {@code item|block|fluid.minecraft.*} using the same pack-layer
+ * After lang merge, fill missing {@code item|block|fluid.minecraft.*} using the same pack-layer
  * lang merge as {@link LangMergerExporter} (not a single winning {@code listResources} file).
  */
 final class VanillaMinecraftLangSupplement {

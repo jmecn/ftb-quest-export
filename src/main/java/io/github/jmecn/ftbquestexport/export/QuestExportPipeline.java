@@ -7,7 +7,7 @@ import io.github.jmecn.ftbquestexport.export.assets.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestIconExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestItemNameKeysExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestItemsIndexExporter;
-import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
+import io.github.jmecn.ftbquestexport.export.lang.QuestLangKeys;
 import io.github.jmecn.ftbquestexport.export.lang.LangMergerExporter;
 import io.github.jmecn.ftbquestexport.export.pojo.AssetExportResult;
 import io.github.jmecn.ftbquestexport.export.pojo.FluidExportResult;
@@ -79,11 +79,11 @@ public final class QuestExportPipeline {
         AssetExportResult resources = null;
         if (scan != null) {
             try {
-                QuestRichTextScan.enrichFromLangClosure(client, scan);
+                QuestRichTextScan.enrichTexturesFromLang(client, scan);
                 resources = QuestAssetExporter.export(outputDir, client, scan);
                 manifest.put("resources", resourceStats(resources));
             } catch (Throwable t) {
-                FtbQuestExportMod.LOGGER.error("resource closure export failed", t);
+                FtbQuestExportMod.LOGGER.error("resource export failed", t);
                 manifest.put("resourceExportError", t.getClass().getSimpleName() + ": " + t.getMessage());
             }
         }
@@ -132,19 +132,18 @@ public final class QuestExportPipeline {
             try {
                 Set<String> langKeys = scan != null ? scan.getLangKeys() : Set.of();
                 if (scan != null) {
-                    langKeys = LangClosureKeys.mergeClosureLangKeys(
+                    langKeys = QuestLangKeys.mergeItemFluidLangKeys(
                             langKeys, scan.getItems(), scan.getFluids());
-                    langKeys = LangClosureKeys.mergeBlockLangKeys(langKeys, scan.getBlocks());
-                    langKeys = LangClosureKeys.mergeEntityLangKeys(langKeys, scan.getEntities());
-                    langKeys = LangClosureKeys.mergeTagLangKeys(langKeys, scan.getTags());
+                    langKeys = QuestLangKeys.mergeBlockLangKeys(langKeys, scan.getBlocks());
+                    langKeys = QuestLangKeys.mergeEntityLangKeys(langKeys, scan.getEntities());
+                    langKeys = QuestLangKeys.mergeTagLangKeys(langKeys, scan.getTags());
                 }
                 var lang = LangMergerExporter.exportTo(
                         outputDir.resolve("lang"), client, null, langKeys.isEmpty() ? null : langKeys);
                 manifest.put("lang", Map.of(
                         "files", lang.languagesWritten(),
                         "bytes", lang.totalBytes(),
-                        "mode", langKeys.isEmpty() ? "full" : "closure",
-                        "closureKeys", lang.closureKeysRequested()));
+                        "keys", lang.langKeysRequested()));
             } catch (IOException e) {
                 FtbQuestExportMod.LOGGER.error("lang export failed", e);
             }
@@ -197,7 +196,7 @@ public final class QuestExportPipeline {
                 "fluids", "extras/fluids.json"));
         meta.put("stats", scan.toStatsMap());
         if (resources != null) {
-            meta.put("closure", Map.of(
+            meta.put("assets", Map.of(
                     "assetFiles", resources.assetFiles(),
                     "dataFiles", resources.dataFiles(),
                     "seeded", resources.seededLocations(),
@@ -227,8 +226,8 @@ public final class QuestExportPipeline {
         stats.put("dataBytes", resources.dataBytes());
         stats.put("failures", resources.failures());
         stats.put("serverSkipped", resources.serverSkipped());
-        stats.put("closureSeeded", resources.seededLocations());
-        stats.put("closureWritten", resources.writtenLocations());
+        stats.put("assetsSeeded", resources.seededLocations());
+        stats.put("assetsWritten", resources.writtenLocations());
         return stats;
     }
 

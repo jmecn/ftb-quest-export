@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Renders quest closure item/fluid icons to {@code icons/items/<ns>/<path>.png}
+ * Renders quest-referenced item/fluid icons to {@code icons/items/<ns>/<path>.png}
  */
 public final class QuestItemIconExporter {
 
@@ -52,7 +52,7 @@ public final class QuestItemIconExporter {
 
         Set<String> fluidSet = fluidIds == null ? Set.of() : Set.copyOf(fluidIds);
         FtbQuestExportMod.LOGGER.info(
-                "[icons] rendering {} closure id(s) ({} items, {} fluids) at {}px -> {}",
+                "[icons] rendering {} id(s) ({} items, {} fluids) at {}px -> {}",
                 ordered.size(),
                 itemIds == null ? 0 : itemIds.size(),
                 fluidIds == null ? 0 : fluidIds.size(),

@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/** Writes {@code items/index.json} from quest scan closure (registry ids referenced by tasks/rewards). */
+/** Writes {@code items/index.json} from quest scan (registry ids referenced by tasks/rewards). */
 public final class QuestItemsIndexExporter {
 
     private QuestItemsIndexExporter() {}

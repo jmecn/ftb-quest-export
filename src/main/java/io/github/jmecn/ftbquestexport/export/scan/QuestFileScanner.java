@@ -85,6 +85,11 @@ public final class QuestFileScanner {
             if (chapterTitle != null && !chapterTitle.isBlank()) {
                 summary.put("title", chapterTitle);
             }
+            List<String> rawSubtitle = chapter.getRawSubtitle();
+            if (!rawSubtitle.isEmpty()) {
+                summary.put("subtitle", rawSubtitle);
+                scan.collectLangFromLines(rawSubtitle);
+            }
             chapterIndex.add(summary);
         }
         index.put("chapters", chapterIndex);

@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.icons;
 
+import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
+import io.github.jmecn.ftbquestexport.export.pojo.ItemIconExportResult;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
 import net.minecraft.client.Minecraft;
@@ -30,24 +32,13 @@ import java.util.TreeSet;
  */
 public final class QuestItemIconExporter {
 
-    private static final int ICON_CELL = 32;
-    private static final int FLUSH_RENDER_EVERY = 256;
-    private static final int LOG_STRIDE = 200;
-
     private QuestItemIconExporter() {}
 
-    public record Result(
-            int itemsRendered,
-            int fluidsRendered,
-            int fluidsSkipped,
-            int failures,
-            long pngBytes) {}
-
     public static boolean isEnabled() {
-        return !Boolean.getBoolean("quest.skipIconExport");
+        return !Boolean.getBoolean(QuestExportConstants.SKIP_ICON_EXPORT);
     }
 
-    public static Result export(Path iconsRoot, Minecraft client, Set<String> itemIds, Set<String> fluidIds)
+    public static ItemIconExportResult export(Path iconsRoot, Minecraft client, Set<String> itemIds, Set<String> fluidIds)
             throws IOException {
         Files.createDirectories(iconsRoot.resolve("items"));
 
@@ -65,7 +56,7 @@ public final class QuestItemIconExporter {
                 ordered.size(),
                 itemIds == null ? 0 : itemIds.size(),
                 fluidIds == null ? 0 : fluidIds.size(),
-                ICON_CELL,
+                QuestExportConstants.ICON_CELL_PX,
                 iconsRoot);
 
         int itemsRendered = 0;
@@ -74,7 +65,7 @@ public final class QuestItemIconExporter {
         int failures = 0;
         long pngBytes = 0;
 
-        try (var renderer = new OffScreenRenderer(ICON_CELL, ICON_CELL)) {
+        try (var renderer = new OffScreenRenderer(QuestExportConstants.ICON_CELL_PX, QuestExportConstants.ICON_CELL_PX)) {
             var bufferSource = client.renderBuffers().bufferSource();
             var guiGraphics = new GuiGraphics(client, bufferSource);
 
@@ -107,10 +98,10 @@ public final class QuestItemIconExporter {
                         pngBytes += Files.size(out);
                     }
 
-                    if (index % FLUSH_RENDER_EVERY == 0) {
+                    if (index % QuestExportConstants.ICON_FLUSH_RENDER_EVERY == 0) {
                         bufferSource.endBatch();
                     }
-                    if (index % LOG_STRIDE == 0 || index == total) {
+                    if (index % QuestExportConstants.ICON_LOG_STRIDE == 0 || index == total) {
                         FtbQuestExportMod.LOGGER.info(
                                 "[icons] {}% {}/{} ({} items, {} fluids, {} skipped, {} fail)",
                                 (index * 100) / total,
@@ -138,7 +129,7 @@ public final class QuestItemIconExporter {
                 failures,
                 pngBytes);
 
-        return new Result(itemsRendered, fluidsRendered, fluidsSkipped, failures, pngBytes);
+        return new ItemIconExportResult(itemsRendered, fluidsRendered, fluidsSkipped, failures, pngBytes);
     }
 
     /** @return 1 rendered, 0 skipped (no still), -1 not a fluid */

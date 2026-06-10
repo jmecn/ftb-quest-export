@@ -6,6 +6,7 @@ import dev.ftb.mods.ftblibrary.icon.ItemIcon;
 import dev.ftb.mods.ftbquests.quest.Quest;
 import dev.ftb.mods.ftbquests.quest.task.ItemTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
+import io.github.jmecn.ftbquestexport.export.pojo.QuestTitleFallback;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -30,7 +31,7 @@ public final class QuestDisplayExport {
             q.put("title", rawTitle);
             scan.collectLangFromText(rawTitle);
         } else {
-            TitleFallback fallback = titleFallback(quest);
+            QuestTitleFallback fallback = titleFallback(quest);
             if (fallback != null) {
                 q.put("titleItem", fallback.itemId());
                 scan.addItem(fallback.itemId());
@@ -125,9 +126,7 @@ public final class QuestDisplayExport {
         return null;
     }
 
-    private record TitleFallback(String itemId, long count) {}
-
-    private static TitleFallback titleFallback(Quest quest) {
+    private static QuestTitleFallback titleFallback(Quest quest) {
         Task first = firstTask(quest);
         if (first == null) {
             return null;
@@ -140,7 +139,7 @@ public final class QuestDisplayExport {
             return null;
         }
         String itemId = ForgeRegistries.ITEMS.getKey(stack.getItem()).toString();
-        return new TitleFallback(itemId, itemTask.getMaxProgress());
+        return new QuestTitleFallback(itemId, itemTask.getMaxProgress());
     }
 
     private static Task firstTask(Quest quest) {

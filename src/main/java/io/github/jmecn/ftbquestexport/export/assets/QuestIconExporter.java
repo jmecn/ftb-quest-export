@@ -1,6 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.assets;
 
 import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
+import io.github.jmecn.ftbquestexport.export.pojo.ItemIconExportResult;
 import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ public final class QuestIconExporter {
         return QuestItemIconExporter.isEnabled();
     }
 
-    public static QuestItemIconExporter.Result export(
+    public static ItemIconExportResult export(
             Path iconsRoot,
             Minecraft client,
             Set<String> itemIds,

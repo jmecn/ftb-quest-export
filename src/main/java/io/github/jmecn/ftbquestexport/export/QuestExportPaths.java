@@ -4,18 +4,14 @@ import java.nio.file.Path;
 
 public final class QuestExportPaths {
 
-    public static final String QUEST_SUBDIR = "quest-export";
-    public static final String EXPORT_ROOT_PROPERTY = "quest.export.outputDir";
-    public static final String EXPORT_FOLDER_PROPERTY = "quest.exportFolder";
-
     private QuestExportPaths() {}
 
     public static Path resolveExportRoot(Path gameDirectory) {
-        String out = System.getProperty(EXPORT_ROOT_PROPERTY);
+        String out = System.getProperty(QuestExportConstants.EXPORT_ROOT_PROPERTY);
         if (out != null && !out.isBlank()) {
             return Path.of(out.trim());
         }
-        String folder = System.getProperty(EXPORT_FOLDER_PROPERTY);
+        String folder = System.getProperty(QuestExportConstants.EXPORT_FOLDER_PROPERTY);
         if (folder != null && !folder.isBlank()) {
             Path quest = Path.of(folder.trim());
             Path parent = quest.getParent();
@@ -28,29 +24,30 @@ public final class QuestExportPaths {
     }
 
     public static Path questDirectory(Path gameDirectory) {
-        String folder = System.getProperty(EXPORT_FOLDER_PROPERTY);
+        String folder = System.getProperty(QuestExportConstants.EXPORT_FOLDER_PROPERTY);
         if (folder != null && !folder.isBlank()) {
             return Path.of(folder.trim());
         }
-        String out = System.getProperty(EXPORT_ROOT_PROPERTY);
+        String out = System.getProperty(QuestExportConstants.EXPORT_ROOT_PROPERTY);
         if (out != null && !out.isBlank()) {
             Path p = Path.of(out.trim());
-            if (p.getFileName() != null && QUEST_SUBDIR.equals(p.getFileName().toString())) {
+            if (p.getFileName() != null && QuestExportConstants.QUEST_SUBDIR.equals(p.getFileName().toString())) {
                 return p;
             }
-            return p.resolve(QUEST_SUBDIR);
+            return p.resolve(QuestExportConstants.QUEST_SUBDIR);
         }
-        return resolveExportRoot(gameDirectory).resolve(QUEST_SUBDIR);
+        return resolveExportRoot(gameDirectory).resolve(QuestExportConstants.QUEST_SUBDIR);
     }
 
     public static Path questDirectoryFromExportRoot(Path exportRoot) {
-        String folder = System.getProperty(EXPORT_FOLDER_PROPERTY);
+        String folder = System.getProperty(QuestExportConstants.EXPORT_FOLDER_PROPERTY);
         if (folder != null && !folder.isBlank()) {
             return Path.of(folder.trim());
         }
-        if (exportRoot.getFileName() != null && QUEST_SUBDIR.equals(exportRoot.getFileName().toString())) {
+        if (exportRoot.getFileName() != null
+                && QuestExportConstants.QUEST_SUBDIR.equals(exportRoot.getFileName().toString())) {
             return exportRoot;
         }
-        return exportRoot.resolve(QUEST_SUBDIR);
+        return exportRoot.resolve(QuestExportConstants.QUEST_SUBDIR);
     }
 }

@@ -1,5 +1,6 @@
-package io.github.jmecn.ftbquestexport.export.assets;
+package io.github.jmecn.ftbquestexport.export;
 
+import io.github.jmecn.ftbquestexport.export.pojo.ExportDirectorySummary;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -11,16 +12,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Summarizes on-disk size of {@code guide-export/} for manifest stats. */
-public final class ExportDirectoryStats {
+/** On-disk export size summaries for manifest stats. */
+public final class ExportStats {
 
-    private ExportDirectoryStats() {}
+    private ExportStats() {}
 
-    public record Summary(long fileCount, long totalBytes) {}
-
-    public static Summary summarize(Path root) throws IOException {
+    public static ExportDirectorySummary summarize(Path root) throws IOException {
         if (!Files.isDirectory(root)) {
-            return new Summary(0, 0);
+            return new ExportDirectorySummary(0, 0);
         }
         var acc = new long[2];
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
@@ -31,10 +30,10 @@ public final class ExportDirectoryStats {
                 return FileVisitResult.CONTINUE;
             }
         });
-        return new Summary(acc[0], acc[1]);
+        return new ExportDirectorySummary(acc[0], acc[1]);
     }
 
-    public static Map<String, Object> toMap(Summary summary) {
+    public static Map<String, Object> toManifestMap(ExportDirectorySummary summary) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("exportFileCount", summary.fileCount());
         m.put("exportTotalBytes", summary.totalBytes());

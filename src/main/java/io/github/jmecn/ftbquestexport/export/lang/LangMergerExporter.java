@@ -1,11 +1,13 @@
 package io.github.jmecn.ftbquestexport.export.lang;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
+import io.github.jmecn.ftbquestexport.export.QuestExportJson;
 import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
-import io.github.jmecn.ftbquestexport.export.assets.ResourceExportFilter;
+import io.github.jmecn.ftbquestexport.export.assets.QuestAssetExporter;
+import io.github.jmecn.ftbquestexport.export.pojo.LangExportResult;
+import io.github.jmecn.ftbquestexport.export.pojo.LangMergeStats;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -33,31 +35,13 @@ import java.util.function.Predicate;
  */
 public final class LangMergerExporter {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    /** Always merged in full — small mod-specific UI set used by QuestBook (e.g. guide links). */
-    private static final String FTBQUESTS_NAMESPACE = "ftbquests";
-
     private LangMergerExporter() {}
 
-    public record Result(
-            int languagesWritten,
-            long totalBytes,
-            int duplicateKeyWarnings,
-            int closureKeysRequested,
-            int keysSkipped,
-            int keysPerLanguage) {}
-
-    static final class MergeStats {
-        int keysSkipped;
-        int duplicateKeyWarnings;
-        int resourceLayersRead;
-    }
-
     public static boolean isEnabled() {
-        return !Boolean.getBoolean("quest.skipLangExport");
+        return !Boolean.getBoolean(QuestExportConstants.SKIP_LANG_EXPORT);
     }
 
-    public static Result exportTo(Path langRoot, Minecraft client, Set<String> onlyNamespaces, Set<String> onlyKeys)
+    public static LangExportResult exportTo(Path langRoot, Minecraft client, Set<String> onlyNamespaces, Set<String> onlyKeys)
             throws IOException {
         Files.createDirectories(langRoot);
 
@@ -76,12 +60,12 @@ public final class LangMergerExporter {
             String langFile = langCode + ".json";
             Map<String, String> merged = new TreeMap<>();
             Map<ResourceLocation, List<Resource>> stacks = collectLangStacks(client, langFile, onlyNamespaces);
-            MergeStats stats = new MergeStats();
+            LangMergeStats stats = new LangMergeStats();
 
             if (stacks.isEmpty()) {
                 FtbQuestExportMod.LOGGER.warn(
                         "{} {} - no mod lang files matched (namespaces={})",
-                        LangExportLog.LANG,
+                        QuestExportConstants.LOG_PREFIX_LANG,
                         langCode,
                         onlyNamespaces == null ? "all" : onlyNamespaces);
                 logLangPathProbe(client, langFile);
@@ -89,7 +73,7 @@ public final class LangMergerExporter {
                 mergeLangStacksInto(merged, stacks, onlyKeys, stats);
             }
 
-            mergeFullNamespace(client, langFile, FTBQUESTS_NAMESPACE, merged, stats);
+            mergeFullNamespace(client, langFile, QuestExportConstants.FTBQUESTS_NAMESPACE, merged, stats);
 
             if (onlyKeys != null) {
                 VanillaMinecraftLangSupplement.supplement(merged, client, langCode, onlyKeys);
@@ -98,7 +82,7 @@ public final class LangMergerExporter {
             if (merged.isEmpty()) {
                 FtbQuestExportMod.LOGGER.warn(
                         "{} {} - 0 keys after merge ({}, {} lang file stacks, {} pack layers)",
-                        LangExportLog.LANG,
+                        QuestExportConstants.LOG_PREFIX_LANG,
                         langCode,
                         mode,
                         stacks.size(),
@@ -107,7 +91,7 @@ public final class LangMergerExporter {
             }
 
             Path out = langRoot.resolve(langFile);
-            String json = GSON.toJson(merged);
+            String json = QuestExportJson.PRETTY.toJson(merged);
             Files.writeString(out, json);
             languagesWritten++;
             totalBytes += json.length();
@@ -116,7 +100,7 @@ public final class LangMergerExporter {
             duplicateWarnings += stats.duplicateKeyWarnings;
             FtbQuestExportMod.LOGGER.info(
                     "{} {} - {} keys from {} lang file stacks ({} pack layers, {})",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     langCode,
                     merged.size(),
                     stacks.size(),
@@ -127,20 +111,20 @@ public final class LangMergerExporter {
         if (onlyKeys != null) {
             FtbQuestExportMod.LOGGER.info(
                     "{} closure key filter: {} requested, ~{} keys per language file, {} entries skipped while scanning",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     onlyKeys.size(),
                     keysPerLanguage,
                     keysSkipped);
         }
-        if (duplicateWarnings > LangExportLog.DETAIL_FAILURE_LIMIT) {
+        if (duplicateWarnings > QuestExportConstants.LOG_DETAIL_FAILURE_LIMIT) {
             FtbQuestExportMod.LOGGER.warn(
                     "{} {} duplicate-key warnings while merging (first {} at DEBUG)",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     duplicateWarnings,
-                    LangExportLog.DETAIL_FAILURE_LIMIT);
+                    QuestExportConstants.LOG_DETAIL_FAILURE_LIMIT);
         }
 
-        return new Result(
+        return new LangExportResult(
                 languagesWritten,
                 totalBytes,
                 duplicateWarnings,
@@ -149,7 +133,7 @@ public final class LangMergerExporter {
                 keysPerLanguage);
     }
 
-    static boolean matchesLangPath(ResourceLocation location, String langFile) {
+    public static boolean matchesLangPath(ResourceLocation location, String langFile) {
         String path = location.getPath();
         return path.equals(langFile) || path.equals("lang/" + langFile) || path.endsWith("/" + langFile);
     }
@@ -164,19 +148,22 @@ public final class LangMergerExporter {
             String langFile,
             String namespace,
             Map<String, String> merged,
-            MergeStats stats) {
+            LangMergeStats stats) {
         Map<ResourceLocation, List<Resource>> stacks =
                 collectLangStacks(client, langFile, Set.of(namespace));
         if (stacks.isEmpty()) {
             FtbQuestExportMod.LOGGER.debug(
-                    "{} {} - no lang stacks for namespace {}", LangExportLog.LANG, langFile, namespace);
+                    "{} {} - no lang stacks for namespace {}",
+                    QuestExportConstants.LOG_PREFIX_LANG,
+                    langFile,
+                    namespace);
             return;
         }
         int before = merged.size();
         mergeLangStacksInto(merged, stacks, null, stats);
         FtbQuestExportMod.LOGGER.debug(
                 "{} {} - merged full {} lang ({} keys, {} stacks)",
-                LangExportLog.LANG,
+                QuestExportConstants.LOG_PREFIX_LANG,
                 langFile,
                 namespace,
                 merged.size() - before,
@@ -187,7 +174,7 @@ public final class LangMergerExporter {
             Map<String, String> merged,
             Map<ResourceLocation, List<Resource>> stacks,
             Set<String> onlyKeys,
-            MergeStats stats) {
+            LangMergeStats stats) {
         Map<String, ResourceLocation> keyOrigin = new HashMap<>();
         for (Map.Entry<ResourceLocation, List<Resource>> stackEntry : stacks.entrySet()) {
             ResourceLocation location = stackEntry.getKey();
@@ -209,10 +196,10 @@ public final class LangMergerExporter {
                         ResourceLocation previous = keyOrigin.get(key);
                         if (previous != null && !previous.equals(location)) {
                             stats.duplicateKeyWarnings++;
-                            LangExportLog.detailFailure(
+                            logDetailFailure(
                                     stats.duplicateKeyWarnings,
                                     "{} duplicate key '{}' from {} (was {})",
-                                    LangExportLog.LANG,
+                                    QuestExportConstants.LOG_PREFIX_LANG,
                                     key,
                                     location,
                                     previous);
@@ -222,7 +209,10 @@ public final class LangMergerExporter {
                     }
                 } catch (Exception e) {
                     FtbQuestExportMod.LOGGER.warn(
-                            "{} failed to read {}: {}", LangExportLog.LANG, location, e.getMessage());
+                            "{} failed to read {}: {}",
+                            QuestExportConstants.LOG_PREFIX_LANG,
+                            location,
+                            e.getMessage());
                 }
             }
         }
@@ -231,7 +221,7 @@ public final class LangMergerExporter {
     private static Map<ResourceLocation, List<Resource>> collectLangStacks(
             Minecraft client, String langFile, Set<String> onlyNamespaces) {
         Predicate<ResourceLocation> filter = location -> matchesLangPath(location, langFile)
-                && !ResourceExportFilter.isExcluded(location)
+                && !QuestAssetExporter.isExcluded(location)
                 && (onlyNamespaces == null || onlyNamespaces.contains(location.getNamespace()));
 
         Map<ResourceLocation, List<Resource>> stacks = new LinkedHashMap<>();
@@ -277,15 +267,26 @@ public final class LangMergerExporter {
         if (shown > 0) {
             FtbQuestExportMod.LOGGER.warn(
                     "{} client has {} lang file stack(s) for {} but none passed namespace filter; sample: {}",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     shown,
                     langFile,
                     sample);
         } else {
             FtbQuestExportMod.LOGGER.warn(
                     "{} client ResourceManager has no resources under lang/ for {} (assets not loaded?)",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     langFile);
+        }
+    }
+
+    private static void logDetailFailure(int failureCount, String message, Object... args) {
+        if (failureCount > QuestExportConstants.LOG_DETAIL_FAILURE_LIMIT) {
+            return;
+        }
+        if (Boolean.getBoolean(QuestExportConstants.LOG_DETAIL_FAILURES)) {
+            FtbQuestExportMod.LOGGER.warn(message, args);
+        } else if (FtbQuestExportMod.LOGGER.isDebugEnabled()) {
+            FtbQuestExportMod.LOGGER.debug(message, args);
         }
     }
 }

@@ -9,7 +9,8 @@ import dev.ftb.mods.ftblibrary.util.client.ImageComponent;
 import dev.ftb.mods.ftbquests.quest.Quest;
 import dev.ftb.mods.ftbquests.util.TextUtils;
 import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
-import io.github.jmecn.ftbquestexport.export.assets.ResourceExportFilter;
+import io.github.jmecn.ftbquestexport.export.assets.QuestAssetExporter;
+import io.github.jmecn.ftbquestexport.export.lang.LangMergerExporter;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -25,9 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Collects lang keys and texture refs from FTB Quests rich text.
- */
+/** Collects lang keys and texture refs from FTB Quests rich text. */
 public final class QuestRichTextScan {
 
     private QuestRichTextScan() {}
@@ -83,11 +82,6 @@ public final class QuestRichTextScan {
         }
     }
 
-    /**
-     * {@link TextUtils} has no public JSON probe; it uses a private regex then
-     * {@link Component.Serializer#fromJson}. We probe with the same deserializer so
-     * {@link TextComponentParser} is skipped only on lines {@link TextUtils#parseRawText} treats as JSON.
-     */
     private static boolean isJsonText(String line) {
         String trimmed = line.trim();
         if (trimmed.isEmpty()) {
@@ -153,7 +147,7 @@ public final class QuestRichTextScan {
         Map<String, String> values = new LinkedHashMap<>();
         Map<ResourceLocation, Resource> hits = rm.listResources(
                 "lang",
-                loc -> matchesLangPath(loc, langFile) && !ResourceExportFilter.isExcluded(loc));
+                loc -> LangMergerExporter.matchesLangPath(loc, langFile) && !QuestAssetExporter.isExcluded(loc));
         for (var entry : hits.entrySet()) {
             try (var reader = new InputStreamReader(entry.getValue().open(), StandardCharsets.UTF_8)) {
                 JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
@@ -168,10 +162,5 @@ public final class QuestRichTextScan {
             }
         }
         return values;
-    }
-
-    private static boolean matchesLangPath(ResourceLocation loc, String langFile) {
-        String path = loc.getPath();
-        return path.equals(langFile) || path.equals("lang/" + langFile) || path.endsWith("/" + langFile);
     }
 }

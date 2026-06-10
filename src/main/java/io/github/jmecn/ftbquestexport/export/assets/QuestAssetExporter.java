@@ -1,39 +1,38 @@
 package io.github.jmecn.ftbquestexport.export.assets;
 
-import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
-
+import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
+import io.github.jmecn.ftbquestexport.export.pojo.AssetExportCounters;
+import io.github.jmecn.ftbquestexport.export.pojo.AssetExportResult;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Set;
 
 public final class QuestAssetExporter {
 
     private QuestAssetExporter() {}
 
-    public record Result(
-            int assetFiles,
-            int dataFiles,
-            long assetBytes,
-            long dataBytes,
-            int failures,
-            boolean serverSkipped,
-            int seededLocations,
-            int writtenLocations) {}
-
-    public static Result export(Path outputDir, Minecraft client, QuestScanResult scan) throws IOException {
+    public static AssetExportResult export(Path outputDir, Minecraft client, QuestScanResult scan) throws IOException {
         Path assetsRoot = outputDir.resolve("assets");
         ResourceManager rm = client.getResourceManager();
-        Set<String> excluded = ResourceExportFilter.excludedNamespaces();
+        Set<String> excluded = excludedNamespaces();
 
         int textureRefCount = scan.getTextures().size();
-        Set<ResourceLocation> textures = TextureRefResolver.resolveAll(scan.getTextures());
-        ExportCounters assets = writeTextures(rm, assetsRoot, textures, excluded);
+        Set<ResourceLocation> textures = resolveTextureRefs(scan.getTextures());
+        AssetExportCounters assets = writeTextures(rm, assetsRoot, textures, excluded);
 
         FtbQuestExportMod.LOGGER.info(
                 "[textures] {} scan refs → {} PNG locations, wrote {} files",
@@ -41,7 +40,7 @@ public final class QuestAssetExporter {
                 textures.size(),
                 assets.files);
 
-        return new Result(
+        return new AssetExportResult(
                 assets.files,
                 0,
                 assets.bytes,
@@ -52,12 +51,62 @@ public final class QuestAssetExporter {
                 assets.written);
     }
 
-    private static ExportCounters writeTextures(
+    public static Set<String> excludedNamespaces() {
+        String extra = System.getProperty(QuestExportConstants.EXPORT_EXCLUDED_NAMESPACES_PROPERTY, "").trim();
+        if (extra.isEmpty()) {
+            return QuestExportConstants.DEFAULT_EXCLUDED_NAMESPACES;
+        }
+        var merged = new LinkedHashSet<>(QuestExportConstants.DEFAULT_EXCLUDED_NAMESPACES);
+        Arrays.stream(extra.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .forEach(merged::add);
+        return Set.copyOf(merged);
+    }
+
+    public static boolean isExcluded(ResourceLocation id) {
+        return excludedNamespaces().contains(id.getNamespace());
+    }
+
+    private static Set<ResourceLocation> resolveTextureRefs(Iterable<String> textureRefs) {
+        Set<ResourceLocation> locations = new LinkedHashSet<>();
+        for (String ref : textureRefs) {
+            addTextureRef(ref, locations);
+        }
+        return locations;
+    }
+
+    private static void addTextureRef(String textureRef, Set<ResourceLocation> pending) {
+        if (textureRef == null || textureRef.isBlank()) {
+            return;
+        }
+        String ref = textureRef;
+        if (ref.endsWith(".png") || ref.endsWith(".mcmeta")) {
+            if (ref.endsWith(".mcmeta")) {
+                ref = ref.substring(0, ref.length() - ".mcmeta".length());
+            } else if (ref.endsWith(".png")) {
+                ref = ref.substring(0, ref.length() - ".png".length());
+            }
+        }
+        ResourceLocation loc = ResourceLocation.tryParse(ref);
+        if (loc == null) {
+            return;
+        }
+        String path = loc.getPath();
+        if (!path.startsWith("textures/")) {
+            path = "textures/" + path;
+        }
+        pending.add(ResourceLocation.fromNamespaceAndPath(loc.getNamespace(), path + ".png"));
+        pending.add(ResourceLocation.fromNamespaceAndPath(loc.getNamespace(), path + ".png.mcmeta"));
+    }
+
+    private static AssetExportCounters writeTextures(
             ResourceManager rm,
             Path assetsRoot,
             Set<ResourceLocation> textures,
             Set<String> excludedNamespaces) {
-        ExportCounters counters = new ExportCounters();
+        AssetExportCounters counters = new AssetExportCounters();
         Set<ResourceLocation> written = new HashSet<>();
         for (ResourceLocation id : textures) {
             if (!written.add(id)) {
@@ -79,7 +128,7 @@ public final class QuestAssetExporter {
                     }
                 }
                 if (opt.isPresent()) {
-                    counters.bytes += ResourceFileWriter.write(assetsRoot, id, opt.get());
+                    counters.bytes += writeResource(assetsRoot, id, opt.get());
                     counters.files++;
                     counters.written++;
                 } else {
@@ -94,10 +143,12 @@ public final class QuestAssetExporter {
         return counters;
     }
 
-    private static final class ExportCounters {
-        int files;
-        long bytes;
-        int failures;
-        int written;
+    private static long writeResource(Path typeRoot, ResourceLocation id, Resource resource) throws IOException {
+        Path outFile = typeRoot.resolve(id.getNamespace()).resolve(id.getPath());
+        Files.createDirectories(outFile.getParent());
+        try (InputStream in = resource.open()) {
+            long bytes = Files.copy(in, outFile, StandardCopyOption.REPLACE_EXISTING);
+            return bytes > 0 ? bytes : Files.size(outFile);
+        }
     }
 }

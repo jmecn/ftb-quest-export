@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.lang;
 
+import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
+import io.github.jmecn.ftbquestexport.export.pojo.LangMergeStats;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -18,8 +20,7 @@ import java.util.TreeSet;
  */
 final class VanillaMinecraftLangSupplement {
 
-    private VanillaMinecraftLangSupplement() {
-    }
+    private VanillaMinecraftLangSupplement() {}
 
     static boolean isMinecraftRegistryLangKey(String key) {
         return key != null
@@ -44,8 +45,8 @@ final class VanillaMinecraftLangSupplement {
 
         List<String> locales = new ArrayList<>();
         locales.add(langCode);
-        if (!"en_us".equals(langCode)) {
-            locales.add("en_us");
+        if (!QuestExportConstants.FALLBACK_LOCALE.equals(langCode)) {
+            locales.add(QuestExportConstants.FALLBACK_LOCALE);
         }
 
         int added = 0;
@@ -60,14 +61,14 @@ final class VanillaMinecraftLangSupplement {
             String sample = missing.stream().limit(5).reduce((a, b) -> a + ", " + b).orElse("");
             FtbQuestExportMod.LOGGER.info(
                     "{} {} - {} minecraft registry lang keys still missing after vanilla supplement (e.g. {})",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     langCode,
                     missing.size(),
                     sample);
         } else if (added > 0) {
             FtbQuestExportMod.LOGGER.info(
                     "{} {} - supplemented {} minecraft registry lang keys from vanilla pack",
-                    LangExportLog.LANG,
+                    QuestExportConstants.LOG_PREFIX_LANG,
                     langCode,
                     added);
         }
@@ -81,7 +82,7 @@ final class VanillaMinecraftLangSupplement {
             return 0;
         }
         Map<String, String> minecraftMerged = new TreeMap<>();
-        LangMergerExporter.mergeLangStacksInto(minecraftMerged, stacks, null, new LangMergerExporter.MergeStats());
+        LangMergerExporter.mergeLangStacksInto(minecraftMerged, stacks, null, new LangMergeStats());
         int added = 0;
         Set<String> found = new TreeSet<>();
         for (String key : missing) {

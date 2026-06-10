@@ -1,6 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.icons;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -18,8 +19,6 @@ import java.util.List;
 
 /** Renders a fluid still texture (tinted) into an {@link OffScreenRenderer} buffer. */
 public final class FluidStillIconRenderer {
-
-    private static final int GUI_SIZE = 16;
 
     private FluidStillIconRenderer() {}
 
@@ -64,7 +63,7 @@ public final class FluidStillIconRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(fr, fg, fb, fa);
-            guiGraphics.blit(0, 0, 0, GUI_SIZE, GUI_SIZE, sprite);
+            guiGraphics.blit(0, 0, 0, QuestExportConstants.FLUID_ICON_GUI_SIZE, QuestExportConstants.FLUID_ICON_GUI_SIZE, sprite);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         };
         renderer.captureAsPng(draw, output);

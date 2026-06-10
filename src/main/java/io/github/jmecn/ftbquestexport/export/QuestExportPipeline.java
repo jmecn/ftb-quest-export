@@ -1,24 +1,22 @@
 package io.github.jmecn.ftbquestexport.export;
 
+import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import io.github.jmecn.ftbquestexport.export.assets.ChapterImageExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestAssetExporter;
-import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import io.github.jmecn.ftbquestexport.export.assets.ExportDirectoryStats;
 import io.github.jmecn.ftbquestexport.export.assets.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestIconExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestItemNameKeysExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestItemsIndexExporter;
-import io.github.jmecn.ftbquestexport.export.assets.QuestLangExporter;
-import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
 import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
-import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
+import io.github.jmecn.ftbquestexport.export.lang.LangMergerExporter;
+import io.github.jmecn.ftbquestexport.export.pojo.AssetExportResult;
+import io.github.jmecn.ftbquestexport.export.pojo.FluidExportResult;
+import io.github.jmecn.ftbquestexport.export.pojo.ScanBundle;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import io.github.jmecn.ftbquestexport.export.write.QuestJsonWriter;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -32,8 +30,6 @@ import java.util.Set;
 
 /** Main quest-export pipeline. */
 public final class QuestExportPipeline {
-
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private QuestExportPipeline() {}
 
@@ -49,14 +45,14 @@ public final class QuestExportPipeline {
         Minecraft client = Minecraft.getInstance();
 
         QuestScanResult scan = null;
-        QuestFileScanner.ScanBundle bundle = null;
+        ScanBundle bundle;
         try {
             bundle = QuestFileScanner.scan();
             scan = bundle.scan();
 
             if (ChapterImageExporter.isEnabled()) {
                 try {
-                    ChapterImageExporter.Result chapterImages = ChapterImageExporter.export(
+                    var chapterImages = ChapterImageExporter.export(
                             outputDir,
                             FTBQuestsAPI.api().getQuestFile(false).getAllChapters(),
                             bundle.chapters());
@@ -80,7 +76,7 @@ public final class QuestExportPipeline {
             manifest.put("error", t.getClass().getSimpleName() + ": " + t.getMessage());
         }
 
-        QuestAssetExporter.Result resources = null;
+        AssetExportResult resources = null;
         if (scan != null) {
             try {
                 QuestRichTextScan.enrichFromLangClosure(client, scan);
@@ -94,7 +90,7 @@ public final class QuestExportPipeline {
 
         if (scan != null && QuestIconExporter.isEnabled()) {
             try {
-                QuestItemIconExporter.Result icons = QuestIconExporter.export(
+                var icons = QuestIconExporter.export(
                         outputDir.resolve("assets/icons"),
                         client,
                         scan.getItems(),
@@ -113,7 +109,7 @@ public final class QuestExportPipeline {
 
         if (scan != null) {
             try {
-                QuestFluidExporter.Result fluids = QuestFluidExporter.export(outputDir, scan);
+                FluidExportResult fluids = QuestFluidExporter.export(outputDir, scan);
                 manifest.put("fluids", Map.of("entries", fluids.fluidsWritten(), "bytes", fluids.bytes()));
             } catch (IOException e) {
                 FtbQuestExportMod.LOGGER.error("fluid export failed", e);
@@ -122,7 +118,7 @@ public final class QuestExportPipeline {
 
         if (scan != null) {
             try {
-                QuestItemsIndexExporter.Result itemsIndex = QuestItemsIndexExporter.export(outputDir, scan);
+                var itemsIndex = QuestItemsIndexExporter.export(outputDir, scan);
                 manifest.put("itemsIndex", Map.of(
                         "itemRefs", itemsIndex.itemRefs(),
                         "fluidRefs", itemsIndex.fluidRefs(),
@@ -132,7 +128,7 @@ public final class QuestExportPipeline {
             }
         }
 
-        if (QuestLangExporter.isEnabled()) {
+        if (LangMergerExporter.isEnabled()) {
             try {
                 Set<String> langKeys = scan != null ? scan.getLangKeys() : Set.of();
                 if (scan != null) {
@@ -142,8 +138,8 @@ public final class QuestExportPipeline {
                     langKeys = LangClosureKeys.mergeEntityLangKeys(langKeys, scan.getEntities());
                     langKeys = LangClosureKeys.mergeTagLangKeys(langKeys, scan.getTags());
                 }
-                QuestLangExporter.Result lang = QuestLangExporter.export(
-                        outputDir, client, null, langKeys.isEmpty() ? null : langKeys);
+                var lang = LangMergerExporter.exportTo(
+                        outputDir.resolve("lang"), client, null, langKeys.isEmpty() ? null : langKeys);
                 manifest.put("lang", Map.of(
                         "files", lang.languagesWritten(),
                         "bytes", lang.totalBytes(),
@@ -156,7 +152,7 @@ public final class QuestExportPipeline {
 
         if (scan != null && QuestItemNameKeysExporter.isEnabled()) {
             try {
-                QuestItemNameKeysExporter.Result nameKeys = QuestItemNameKeysExporter.export(outputDir, client);
+                var nameKeys = QuestItemNameKeysExporter.export(outputDir, client);
                 manifest.put("itemNameKeys", Map.of(
                         "registryIds", nameKeys.registryIds(),
                         "fluids", nameKeys.fluidIds()));
@@ -170,8 +166,8 @@ public final class QuestExportPipeline {
         }
 
         try {
-            ExportDirectoryStats.Summary size = ExportDirectoryStats.summarize(outputDir);
-            manifest.put("exportSize", ExportDirectoryStats.toMap(size));
+            var size = ExportStats.summarize(outputDir);
+            manifest.put("exportSize", ExportStats.toManifestMap(size));
         } catch (IOException e) {
             FtbQuestExportMod.LOGGER.warn("[export] could not summarize export directory size", e);
         }
@@ -186,13 +182,13 @@ public final class QuestExportPipeline {
         }
         Path out = outputDir.resolve("extras/filters.json");
         Files.createDirectories(out.getParent());
-        Files.writeString(out, GSON.toJson(scan.getExpandedFilters()));
+        Files.writeString(out, QuestExportJson.PRETTY.toJson(scan.getExpandedFilters()));
     }
 
     private static void writeMeta(
             Path outputDir,
             QuestScanResult scan,
-            QuestAssetExporter.Result resources) throws IOException {
+            AssetExportResult resources) throws IOException {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("refs", scan.toRefsMap());
         meta.put("taskTypeSupport", defaultTaskTypeSupport());
@@ -207,7 +203,7 @@ public final class QuestExportPipeline {
                     "seeded", resources.seededLocations(),
                     "written", resources.writtenLocations()));
         }
-        Files.writeString(outputDir.resolve("meta.json"), GSON.toJson(meta));
+        Files.writeString(outputDir.resolve("meta.json"), QuestExportJson.PRETTY.toJson(meta));
     }
 
     private static Map<String, String> defaultTaskTypeSupport() {
@@ -223,7 +219,7 @@ public final class QuestExportPipeline {
         return support;
     }
 
-    private static Map<String, Object> resourceStats(QuestAssetExporter.Result resources) {
+    private static Map<String, Object> resourceStats(AssetExportResult resources) {
         Map<String, Object> stats = new LinkedHashMap<>();
         stats.put("assetFiles", resources.assetFiles());
         stats.put("dataFiles", resources.dataFiles());
@@ -237,6 +233,6 @@ public final class QuestExportPipeline {
     }
 
     private static void writeManifest(Path outputDir, Map<String, Object> manifest) throws IOException {
-        Files.writeString(outputDir.resolve("manifest.json"), GSON.toJson(manifest));
+        Files.writeString(outputDir.resolve("manifest.json"), QuestExportJson.PRETTY.toJson(manifest));
     }
 }

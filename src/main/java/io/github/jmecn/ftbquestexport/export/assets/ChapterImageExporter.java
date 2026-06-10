@@ -1,10 +1,11 @@
 package io.github.jmecn.ftbquestexport.export.assets;
 
-import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftbquests.quest.Chapter;
 import dev.ftb.mods.ftbquests.quest.ChapterImage;
-import io.github.jmecn.ftbquestexport.export.icons.ChapterImageBaker;
-import io.github.jmecn.ftbquestexport.export.icons.ChapterImageFrames;
+import io.github.jmecn.ftbquestexport.export.QuestExportConstants;
+import io.github.jmecn.ftbquestexport.export.icons.ChapterImages;
+import io.github.jmecn.ftbquestexport.export.pojo.ChapterImageCacheEntry;
+import io.github.jmecn.ftbquestexport.export.pojo.ChapterImageExportResult;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 
@@ -22,28 +23,24 @@ import java.util.Map;
 /** Bakes chapter decoration images and writes {@code baked} paths into chapter JSON maps. */
 public final class ChapterImageExporter {
 
-    private static final String REL_ROOT = "assets/chapter-images";
-
     private ChapterImageExporter() {}
 
-    public record Result(int imagesSeen, int uniqueBaked, int failures, long pngBytes) {}
-
     public static boolean isEnabled() {
-        return !Boolean.getBoolean("quest.skipChapterImageExport");
+        return !Boolean.getBoolean(QuestExportConstants.SKIP_CHAPTER_IMAGE_EXPORT);
     }
 
-    public static Result export(
+    public static ChapterImageExportResult export(
             Path outputDir,
             List<Chapter> chapters,
             Map<String, Map<String, Object>> chapterJsonByFilename) throws IOException {
-        Path bakeRoot = outputDir.resolve(REL_ROOT);
+        Path bakeRoot = outputDir.resolve(QuestExportConstants.CHAPTER_IMAGES_REL_ROOT);
         Files.createDirectories(bakeRoot);
 
         Minecraft client = Minecraft.getInstance();
         var bufferSource = client.renderBuffers().bufferSource();
         var guiGraphics = new net.minecraft.client.gui.GuiGraphics(client, bufferSource);
 
-        Map<String, CacheEntry> cache = new LinkedHashMap<>();
+        Map<String, ChapterImageCacheEntry> cache = new LinkedHashMap<>();
         int imagesSeen = 0;
         int uniqueBaked = 0;
         int failures = 0;
@@ -70,17 +67,17 @@ public final class ChapterImageExporter {
 
                 try {
                     String cacheKey = bakeCacheKey(source);
-                    CacheEntry entry = cache.get(cacheKey);
+                    ChapterImageCacheEntry entry = cache.get(cacheKey);
                     if (entry == null) {
                         String fileName = hashKey(cacheKey) + ".png";
                         Path out = bakeRoot.resolve(fileName);
-                        ChapterImageBaker.BakeResult baked = ChapterImageBaker.bake(source, out, client, guiGraphics);
+                        var baked = ChapterImages.bake(source, out, client, guiGraphics);
                         if (baked == null) {
                             failures++;
                             continue;
                         }
-                        entry = new CacheEntry(
-                                REL_ROOT + "/" + fileName,
+                        entry = new ChapterImageCacheEntry(
+                                QuestExportConstants.CHAPTER_IMAGES_REL_ROOT + "/" + fileName,
                                 baked.frameCount(),
                                 baked.frameWidth(),
                                 baked.frameHeight(),
@@ -114,13 +111,11 @@ public final class ChapterImageExporter {
                 uniqueBaked,
                 failures,
                 pngBytes);
-        return new Result(imagesSeen, uniqueBaked, failures, pngBytes);
+        return new ChapterImageExportResult(imagesSeen, uniqueBaked, failures, pngBytes);
     }
 
-    private record CacheEntry(String relative, int frameCount, int frameWidth, int frameHeight, long bytes) {}
-
     static String bakeCacheKey(ChapterImage image) {
-        Color4I mod = ChapterImageBaker.vertexColor(image);
+        var mod = ChapterImages.vertexColor(image);
         return image.getImage().toString() + "|rgba=" + mod.rgba();
     }
 

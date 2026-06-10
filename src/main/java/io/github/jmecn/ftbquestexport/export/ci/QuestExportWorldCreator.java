@@ -26,7 +26,7 @@ public final class QuestExportWorldCreator {
     private QuestExportWorldCreator() {}
 
     public static String saveName() {
-        return QuestExportCiProperties.exportWorldName();
+        return io.github.jmecn.ftbquestexport.export.QuestExportProperties.exportWorldName();
     }
 
     public static boolean saveExists(Minecraft mc) {

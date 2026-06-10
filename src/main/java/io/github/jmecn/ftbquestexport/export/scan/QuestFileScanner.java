@@ -1,8 +1,10 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
-import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
-
+import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
+import io.github.jmecn.ftbquestexport.export.icons.ChapterImages;
+import io.github.jmecn.ftbquestexport.export.pojo.ScanBundle;
+import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import dev.ftb.mods.ftbquests.quest.BaseQuestFile;
 import dev.ftb.mods.ftbquests.quest.Chapter;
 import dev.ftb.mods.ftbquests.quest.ChapterGroup;
@@ -17,7 +19,11 @@ import dev.ftb.mods.ftbquests.quest.task.ItemTask;
 import dev.ftb.mods.ftbquests.quest.task.StageTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -28,12 +34,6 @@ import java.util.Map;
 
 /** Reads FTB Quests runtime graph into scan result + JSON-friendly maps. */
 public final class QuestFileScanner {
-
-
-    public record ScanBundle(
-            QuestScanResult scan,
-            Map<String, Object> index,
-            Map<String, Map<String, Object>> chapters) {}
 
     private QuestFileScanner() {}
 
@@ -153,7 +153,7 @@ public final class QuestFileScanner {
             if (image.getOrder() > 0) {
                 img.put("order", image.getOrder());
             }
-            ChapterImageMeta.exportDisplayFields(image, img);
+            exportChapterImageDisplayFields(image, img);
             images.add(img);
         }
         root.put("images", images);
@@ -222,13 +222,13 @@ public final class QuestFileScanner {
         String type = task.getType().getTypeForNBT();
         scan.incrementTaskCount(type);
 
-        CompoundTag nbt = QuestNbtExport.writeTask(task);
+        CompoundTag nbt = writeTaskNbt(task);
         Map<String, Object> t = new LinkedHashMap<>();
         t.put("id", QuestObjectBase.getCodeString(task.id));
         t.put("type", type);
         t.put("title", task.getRawTitle());
         scan.collectLangFromText(task.getRawTitle());
-        if (QuestNbtExport.optionalTask(nbt)) {
+        if (optionalTask(nbt)) {
             t.put("optional", true);
         }
 
@@ -262,31 +262,31 @@ public final class QuestFileScanner {
                 scan.addFluid(id);
             }
         } else if (task instanceof StageTask stageTask) {
-            CompoundTag stageTag = QuestNbtExport.writeTask(stageTask);
-            String stage = QuestNbtExport.string(stageTag, "stage");
+            CompoundTag stageTag = writeTaskNbt(stageTask);
+            String stage = nbtString(stageTag, "stage");
             if (stage != null) {
                 t.put("stage", stage);
             }
         } else {
-            ResourceLocation entity = QuestNbtExport.resource(nbt, "entity");
+            ResourceLocation entity = nbtResource(nbt, "entity");
             if (entity != null) {
                 t.put("entity", entity.toString());
                 scan.addEntity(entity.toString());
             }
-            ResourceLocation dimension = QuestNbtExport.resource(nbt, "dimension");
+            ResourceLocation dimension = nbtResource(nbt, "dimension");
             if (dimension != null) {
                 t.put("dimension", dimension.toString());
             }
-            ResourceLocation biome = QuestNbtExport.resource(nbt, "biome");
+            ResourceLocation biome = nbtResource(nbt, "biome");
             if (biome != null) {
                 t.put("biome", biome.toString());
             }
-            String observe = QuestNbtExport.string(nbt, "to_observe");
+            String observe = nbtString(nbt, "to_observe");
             if (observe != null) {
                 t.put("toObserve", observe);
-                ObserveRefCollector.collect(observe, scan);
+                collectObserveRef(observe, scan);
             }
-            long value = QuestNbtExport.longVal(nbt, "value");
+            long value = nbtLong(nbt, "value");
             if (value > 0) {
                 t.put("value", value);
             }
@@ -324,4 +324,84 @@ public final class QuestFileScanner {
         }
     }
 
+    private static void exportChapterImageDisplayFields(ChapterImage image, Map<String, Object> img) {
+        img.put("alpha", image.getAlpha());
+        if (!image.getColor().equals(Color4I.WHITE)) {
+            img.put("color", image.getColor().rgb());
+        }
+        if (image.isAlignToCorner()) {
+            img.put("alignToCorner", true);
+        }
+        CompoundTag tag = new CompoundTag();
+        image.writeData(tag);
+        if (tag.contains("dependency")) {
+            img.put("dependency", tag.getString("dependency"));
+        }
+        if (tag.getBoolean("dev")) {
+            img.put("editorsOnly", true);
+        }
+        ListTag hoverTag = tag.getList("hover", Tag.TAG_STRING);
+        if (!hoverTag.isEmpty()) {
+            List<String> hover = new ArrayList<>(hoverTag.size());
+            for (int i = 0; i < hoverTag.size(); i++) {
+                hover.add(hoverTag.getString(i));
+            }
+            img.put("hover", hover);
+        }
+        ChapterImages.applyAnimationMeta(image.getImage(), img);
+    }
+
+    private static CompoundTag writeTaskNbt(dev.ftb.mods.ftbquests.quest.task.Task task) {
+        CompoundTag tag = new CompoundTag();
+        task.writeData(tag);
+        return tag;
+    }
+
+    private static boolean optionalTask(CompoundTag tag) {
+        return tag.getBoolean("optional_task");
+    }
+
+    private static String nbtString(CompoundTag tag, String key) {
+        return tag.contains(key, Tag.TAG_STRING) ? tag.getString(key) : null;
+    }
+
+    private static long nbtLong(CompoundTag tag, String key) {
+        return tag.contains(key, Tag.TAG_LONG) ? tag.getLong(key) : 0L;
+    }
+
+    private static ResourceLocation nbtResource(CompoundTag tag, String key) {
+        String s = nbtString(tag, key);
+        return s != null ? ResourceLocation.tryParse(s) : null;
+    }
+
+    private static void collectObserveRef(String ref, QuestScanResult scan) {
+        if (ref == null || ref.isBlank()) {
+            return;
+        }
+        String trimmed = ref.trim();
+        if (trimmed.startsWith("#")) {
+            scan.addTag(trimmed.substring(1));
+            return;
+        }
+        ResourceLocation loc = ResourceLocation.tryParse(trimmed);
+        if (loc == null) {
+            FtbQuestExportMod.LOGGER.debug("[observe] skipping unparseable ref: {}", trimmed);
+            return;
+        }
+        if (ForgeRegistries.BLOCKS.containsKey(loc)) {
+            scan.addBlock(loc.toString());
+            Item blockItem = ForgeRegistries.BLOCKS.getValue(loc).asItem();
+            if (blockItem != null && blockItem != Items.AIR) {
+                scan.addItem(ForgeRegistries.ITEMS.getKey(blockItem).toString());
+            }
+            return;
+        }
+        if (ForgeRegistries.ENTITY_TYPES.containsKey(loc)) {
+            scan.addEntity(loc.toString());
+            return;
+        }
+        FtbQuestExportMod.LOGGER.debug("[observe] ref not in block/entity registry, treating as block: {}", trimmed);
+        scan.addBlock(trimmed);
+    }
 }
+

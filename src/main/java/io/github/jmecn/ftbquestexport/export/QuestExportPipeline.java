@@ -1,5 +1,6 @@
 package io.github.jmecn.ftbquestexport.export;
 
+import io.github.jmecn.ftbquestexport.export.assets.ChapterImageExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestAssetExporter;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
@@ -13,6 +14,7 @@ import io.github.jmecn.ftbquestexport.export.assets.QuestItemsIndexExporter;
 import io.github.jmecn.ftbquestexport.export.assets.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
 import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
+import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
@@ -47,9 +49,28 @@ public final class QuestExportPipeline {
         Minecraft client = Minecraft.getInstance();
 
         QuestScanResult scan = null;
+        QuestFileScanner.ScanBundle bundle = null;
         try {
-            QuestFileScanner.ScanBundle bundle = QuestFileScanner.scan();
+            bundle = QuestFileScanner.scan();
             scan = bundle.scan();
+
+            if (ChapterImageExporter.isEnabled()) {
+                try {
+                    ChapterImageExporter.Result chapterImages = ChapterImageExporter.export(
+                            outputDir,
+                            FTBQuestsAPI.api().getQuestFile(false).getAllChapters(),
+                            bundle.chapters());
+                    manifest.put("chapterImages", Map.of(
+                            "imagesSeen", chapterImages.imagesSeen(),
+                            "uniqueBaked", chapterImages.uniqueBaked(),
+                            "failures", chapterImages.failures(),
+                            "pngBytes", chapterImages.pngBytes()));
+                } catch (Throwable t) {
+                    FtbQuestExportMod.LOGGER.error("chapter image export failed", t);
+                    manifest.put("chapterImageExportError", t.getClass().getSimpleName() + ": " + t.getMessage());
+                }
+            }
+
             QuestJsonWriter.write(outputDir, bundle.index(), bundle.chapters());
             writeFilters(outputDir, scan);
             manifest.put("stats", scan.toStatsMap());

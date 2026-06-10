@@ -2,9 +2,8 @@ package io.github.jmecn.ftbquestexport.export.scan;
 
 import dev.ftb.mods.ftblibrary.icon.Color4I;
 import dev.ftb.mods.ftblibrary.icon.Icon;
-import dev.ftb.mods.ftblibrary.icon.IconAnimation;
-import dev.ftb.mods.ftblibrary.math.PixelBuffer;
 import dev.ftb.mods.ftbquests.quest.ChapterImage;
+import io.github.jmecn.ftbquestexport.export.icons.ChapterImageFrames;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -50,50 +49,17 @@ public final class ChapterImageMeta {
     }
 
     static void applyAnimationMeta(Icon icon, Map<String, Object> img) {
-        Icon source = unwrapAnimation(icon);
-        if (source == null || source.isEmpty()) {
+        ChapterImageFrames.Layout layout = ChapterImageFrames.analyze(icon);
+        if (layout.frameCount() <= 1) {
             return;
         }
-
-        int frameCount = source.getPixelBufferFrameCount();
-        PixelBuffer buffer = source.createPixelBuffer();
-        int frameWidth = 0;
-        int frameHeight = 0;
-
-        if (buffer != null) {
-            frameWidth = buffer.getWidth();
-            frameHeight = buffer.getHeight();
-            if (frameCount <= 1 && frameWidth > 0 && frameHeight > frameWidth && frameHeight % frameWidth == 0) {
-                frameCount = frameHeight / frameWidth;
-                frameHeight = frameWidth;
-            } else if (frameCount > 1 && frameWidth > 0 && frameHeight > 0) {
-                if (frameHeight > frameWidth && frameHeight % frameWidth == 0
-                        && frameHeight / frameWidth == frameCount) {
-                    frameHeight = frameWidth;
-                } else {
-                    frameHeight = frameHeight / frameCount;
-                }
-            }
-        }
-
-        if (frameCount <= 1) {
-            return;
-        }
-
         img.put("animated", true);
-        img.put("frameCount", frameCount);
-        if (frameWidth > 0) {
-            img.put("frameWidth", frameWidth);
+        img.put("frameCount", layout.frameCount());
+        if (layout.frameWidth() > 0) {
+            img.put("frameWidth", layout.frameWidth());
         }
-        if (frameHeight > 0) {
-            img.put("frameHeight", frameHeight);
+        if (layout.frameHeight() > 0) {
+            img.put("frameHeight", layout.frameHeight());
         }
-    }
-
-    private static Icon unwrapAnimation(Icon icon) {
-        if (icon instanceof IconAnimation animation && !animation.list.isEmpty()) {
-            return animation.list.get(0);
-        }
-        return icon;
     }
 }

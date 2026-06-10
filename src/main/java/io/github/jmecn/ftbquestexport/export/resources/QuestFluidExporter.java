@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Writes {@code extras/fluids.json} for quest-referenced fluids. */
 public final class QuestFluidExporter {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");

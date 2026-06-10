@@ -5,11 +5,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 
 import java.util.Set;
 
-/**
- * Seeds closure export from handbook refs. Block ids enqueue the full {@code blockstates/*.json}
- * (all variants) plus the fallback {@code models/block/*.json}; {@link ModelDependencyWalker}
- * pulls every variant model, parent chain, and textures while writing.
- */
 @SuppressWarnings("removal")
 final class ModelDependencyCollector {
 
@@ -42,28 +37,6 @@ final class ModelDependencyCollector {
         }
         enqueueBlockstate(rm, loc.getNamespace(), loc.getPath(), pending);
         enqueueModel(rm, new ResourceLocation(loc.getNamespace(), "models/block/" + loc.getPath() + ".json"), pending);
-    }
-
-    static void seedModelId(ResourceManager rm, String modelId, Set<ResourceLocation> pending) {
-        if (modelId == null || modelId.isBlank()) {
-            return;
-        }
-        ResourceLocation loc = ResourceLocation.tryParse(modelId);
-        if (loc == null) {
-            return;
-        }
-        String path = loc.getPath();
-        if (!path.startsWith("models/")) {
-            if (path.startsWith("block/") || path.startsWith("item/")) {
-                path = "models/" + path;
-            } else {
-                path = "models/" + path;
-            }
-        }
-        if (!path.endsWith(".json")) {
-            path = path + ".json";
-        }
-        enqueueModel(rm, new ResourceLocation(loc.getNamespace(), path), pending);
     }
 
     static void seedTextureRef(String textureRef, Set<ResourceLocation> pending) {

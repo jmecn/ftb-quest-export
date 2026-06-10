@@ -1,6 +1,6 @@
 package io.github.jmecn.ftbquestexport.mod;
 
-import io.github.jmecn.ftbquestexport.export.QuestExportOrchestrator;
+import io.github.jmecn.ftbquestexport.export.QuestExportPipeline;
 import io.github.jmecn.ftbquestexport.export.QuestExportPaths;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;
 
-/** {@code /ftbquestexport run} entry. */
 public final class QuestExport {
 
     private QuestExport() {}
@@ -21,7 +20,7 @@ public final class QuestExport {
                 return 0;
             }
             Path questDir = QuestExportPaths.questDirectory(client.gameDirectory.toPath());
-            Component message = QuestExportOrchestrator.run(questDir);
+            Component message = QuestExportPipeline.run(questDir);
             source.sendSystemMessage(message);
             return 1;
         } catch (Exception e) {

@@ -14,7 +14,6 @@ import io.github.jmecn.ftbquestexport.export.resources.QuestTagMembersExporter;
 import io.github.jmecn.minecraftwebexport.export.emi.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
-import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import io.github.jmecn.ftbquestexport.export.scan.QuestSeedExpander;
 import io.github.jmecn.ftbquestexport.export.write.QuestJsonWriter;
@@ -34,12 +33,12 @@ import java.util.Map;
 import java.util.Set;
 
 /** Main quest-export pipeline. */
-public final class QuestExportOrchestrator {
+public final class QuestExportPipeline {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private QuestExportOrchestrator() {}
+    private QuestExportPipeline() {}
 
     public static Component run(Path outputDir) throws IOException {
         Files.createDirectories(outputDir);
@@ -51,11 +50,6 @@ public final class QuestExportOrchestrator {
         manifest.put("exporter", "ftb-quest-export");
 
         Minecraft client = Minecraft.getInstance();
-        if (client == null) {
-            manifest.put("error", "Minecraft.getInstance() returned null");
-            writeManifest(outputDir, manifest);
-            return Component.literal("[ftb-quest-export] client unavailable");
-        }
 
         QuestScanResult scan = null;
         MinecraftServer server = client.getSingleplayerServer();

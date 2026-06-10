@@ -18,10 +18,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Writes {@code items/name-keys.json}: registry id → in-game {@code getDescriptionId()} lang key.
- * Quest bundle layout (not under {@code emi/}).
- */
 public final class QuestItemNameKeysExporter {
 
     public static final String ITEM_NAME_KEYS_FILE = "items/name-keys.json";

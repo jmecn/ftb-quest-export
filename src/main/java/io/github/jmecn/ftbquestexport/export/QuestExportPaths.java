@@ -2,7 +2,6 @@ package io.github.jmecn.ftbquestexport.export;
 
 import java.nio.file.Path;
 
-/** Layout: {@code <exportRoot>/quest-export/}. */
 public final class QuestExportPaths {
 
     public static final String QUEST_SUBDIR = "quest-export";

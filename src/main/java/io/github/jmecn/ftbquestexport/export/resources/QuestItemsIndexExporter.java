@@ -44,7 +44,7 @@ public final class QuestItemsIndexExporter {
 
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("schema", 1);
-        buckets.forEach(root::put);
+        root.putAll(buckets);
 
         List<String> fluids = new ArrayList<>(scan.getFluids());
         if (!fluids.isEmpty()) {

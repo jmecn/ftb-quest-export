@@ -1,5 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.resources;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -23,7 +25,7 @@ public final class ExportDirectoryStats {
         var acc = new long[2];
         Files.walkFileTree(root, new SimpleFileVisitor<>() {
             @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            public @NotNull FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs) {
                 acc[0]++;
                 acc[1] += attrs.size();
                 return FileVisitResult.CONTINUE;

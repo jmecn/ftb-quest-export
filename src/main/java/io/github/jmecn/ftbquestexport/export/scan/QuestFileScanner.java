@@ -55,10 +55,12 @@ public final class QuestFileScanner {
         scan.addQuestShapeTextures(file.getDefaultQuestShape());
 
         List<Map<String, Object>> groups = new ArrayList<>();
+        int groupIndex = 0;
         for (ChapterGroup group : file.getChapterGroups()) {
             Map<String, Object> g = new LinkedHashMap<>();
             g.put("id", QuestObjectBase.getCodeString(group.id));
             g.put("title", group.getRawTitle());
+            g.put("orderIndex", groupIndex++);
             scan.collectLangFromText(group.getRawTitle());
             groups.add(g);
         }
@@ -153,6 +155,7 @@ public final class QuestFileScanner {
             if (image.getOrder() > 0) {
                 img.put("order", image.getOrder());
             }
+            ChapterImageMeta.exportDisplayFields(image, img);
             images.add(img);
         }
         root.put("images", images);
@@ -188,6 +191,11 @@ public final class QuestFileScanner {
         q.put("description", quest.getRawDescription());
         scan.collectLangFromText(quest.getRawSubtitle());
         scan.collectLangFromLines(quest.getRawDescription());
+
+        String guidePage = quest.getGuidePage();
+        if (guidePage != null && !guidePage.isBlank()) {
+            q.put("guidePage", guidePage);
+        }
 
         List<String> deps = new ArrayList<>();
         quest.streamDependencies().forEach(dep -> deps.add(QuestObjectBase.getCodeString(dep.id)));

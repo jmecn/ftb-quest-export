@@ -12,10 +12,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Quest bundle {@code lang/} via {@link LangMergerExporter} (pack-layer merge +
- * {@code VanillaMinecraftLangSupplement} for {@code item.minecraft.*} closure gaps).
- */
 public final class QuestLangExporter {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");

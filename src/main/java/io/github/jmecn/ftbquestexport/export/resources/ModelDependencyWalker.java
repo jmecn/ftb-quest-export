@@ -35,19 +35,6 @@ final class ModelDependencyWalker {
         }
     }
 
-    static void enqueueModelDependencies(
-            ResourceManager rm,
-            ResourceLocation modelId,
-            Resource resource,
-            Deque<ResourceLocation> pending,
-            Set<ResourceLocation> written) {
-        try (var reader = new InputStreamReader(resource.open(), StandardCharsets.UTF_8)) {
-            enqueueModelDependenciesFromJson(rm, modelId, JsonParser.parseReader(reader).getAsJsonObject(), pending, written);
-        } catch (Exception ignored) {
-            // model parse failures are non-fatal
-        }
-    }
-
     static void enqueueModelDependenciesFromJson(
             ResourceManager rm,
             ResourceLocation modelId,

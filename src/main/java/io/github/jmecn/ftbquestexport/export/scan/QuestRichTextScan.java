@@ -2,6 +2,7 @@ package io.github.jmecn.ftbquestexport.export.scan;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.jmecn.ftbquestexport.export.QuestExportLanguages;
 import io.github.jmecn.ftbquestexport.export.resources.ResourceExportFilter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
@@ -58,11 +59,14 @@ public final class QuestRichTextScan {
         if (wanted.isEmpty()) {
             return;
         }
-        ResourceManager rm = client.getResourceManager();
-        Map<String, String> values = readLangValues(rm, "en_us.json", wanted);
-        var server = client.getSingleplayerServer();
-        if (server != null) {
-            readLangValues(server.getResourceManager(), "en_us.json", wanted).forEach(values::putIfAbsent);
+        Map<String, String> values = new LinkedHashMap<>();
+        for (String lang : QuestExportLanguages.closureLanguages(client)) {
+            String langFile = lang + ".json";
+            readLangValues(client.getResourceManager(), langFile, wanted).forEach(values::putIfAbsent);
+            var server = client.getSingleplayerServer();
+            if (server != null) {
+                readLangValues(server.getResourceManager(), langFile, wanted).forEach(values::putIfAbsent);
+            }
         }
         int before = scan.getTextures().size();
         for (String value : values.values()) {
@@ -70,8 +74,11 @@ public final class QuestRichTextScan {
         }
         int added = scan.getTextures().size() - before;
         if (added > 0) {
-            LOGGER.info("[scan] rich-text lang closure added {} texture ref(s) from {} lang keys",
-                    added, values.size());
+            LOGGER.info(
+                    "[scan] rich-text lang closure added {} texture ref(s) from {} lang values ({} locales)",
+                    added,
+                    values.size(),
+                    QuestExportLanguages.closureLanguages(client).size());
         }
     }
 

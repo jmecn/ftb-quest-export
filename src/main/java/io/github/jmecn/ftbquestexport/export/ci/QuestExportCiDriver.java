@@ -1,7 +1,7 @@
 package io.github.jmecn.ftbquestexport.export.ci;
 
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
-import io.github.jmecn.ftbquestexport.export.QuestExportOrchestrator;
+import io.github.jmecn.ftbquestexport.export.QuestExportPipeline;
 import io.github.jmecn.ftbquestexport.export.QuestExportPaths;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
@@ -155,7 +155,7 @@ public final class QuestExportCiDriver {
             Path questDir = QuestExportPaths.questDirectory(client.gameDirectory.toPath());
             FtbQuestExportMod.LOGGER.info("running quest export to {} ...", questDir.toAbsolutePath());
             try {
-                QuestExportOrchestrator.run(questDir);
+                QuestExportPipeline.run(questDir);
                 FtbQuestExportMod.LOGGER.info("quest export finished, halting JVM");
                 // halt: export is on disk; avoid EMI/TMRV background threads blocking System.exit shutdown.
                 Runtime.getRuntime().halt(0);

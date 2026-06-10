@@ -1,8 +1,10 @@
 package io.github.jmecn.ftbquestexport.export;
 
+import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -10,7 +12,6 @@ import java.util.stream.Collectors;
 
 /**
  * Reads export locale codes from {@code -Dquest.exportLanguages=...}.
- * Language list is owned by QuestBook-Modern ({@code Language} enum); CI sets this property.
  */
 public final class QuestExportLanguages {
 
@@ -20,7 +21,6 @@ public final class QuestExportLanguages {
 
     private QuestExportLanguages() {}
 
-    /** @return configured locales, or {@code null} when property is {@code *} (all MC languages) */
     public static Set<String> resolve() {
         String raw = System.getProperty(PROPERTY, "").trim();
         if (raw.isEmpty()) {
@@ -46,5 +46,13 @@ public final class QuestExportLanguages {
             return List.of();
         }
         return languages.stream().sorted().toList();
+    }
+
+    public static Collection<String> closureLanguages(Minecraft client) {
+        Set<String> configured = resolve();
+        if (configured != null) {
+            return configured;
+        }
+        return client.getLanguageManager().getLanguages().keySet();
     }
 }

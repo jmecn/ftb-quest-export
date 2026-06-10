@@ -13,7 +13,6 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 
-/** Writes quest item icons to {@code quest-export/assets/icons/items/} via MWE atlas + slice. */
 public final class QuestIconExporter {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");

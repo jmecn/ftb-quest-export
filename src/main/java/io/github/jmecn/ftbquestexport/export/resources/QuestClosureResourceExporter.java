@@ -5,7 +5,6 @@ import com.google.gson.JsonParser;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +19,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/** Writes quest-referenced texture closure only ({@code textures/*.png} + {@code .mcmeta}). */
 public final class QuestClosureResourceExporter {
 
     private static final Logger LOGGER = LogManager.getLogger("ftb-quest-export");
@@ -96,7 +94,7 @@ public final class QuestClosureResourceExporter {
                 continue;
             }
             if (path.endsWith(".json") && path.startsWith("models/")) {
-                walkModelJson(rm, id, pending, visited, textures);
+                walkModelJson(rm, id, pending, visited);
             }
         }
         return textures;
@@ -106,8 +104,7 @@ public final class QuestClosureResourceExporter {
             ResourceManager rm,
             ResourceLocation modelId,
             Deque<ResourceLocation> pending,
-            Set<ResourceLocation> visited,
-            Set<ResourceLocation> textures) {
+            Set<ResourceLocation> visited) {
         var opt = rm.getResource(modelId);
         if (opt.isPresent()) {
             try (var reader = new InputStreamReader(opt.get().open(), StandardCharsets.UTF_8)) {
@@ -134,7 +131,7 @@ public final class QuestClosureResourceExporter {
             ResourceManager rm,
             Path assetsRoot,
             Set<ResourceLocation> textures,
-            Set<String> excludedNamespaces) throws IOException {
+            Set<String> excludedNamespaces) {
         ExportCounters counters = new ExportCounters();
         Set<ResourceLocation> written = new HashSet<>();
         for (ResourceLocation id : textures) {

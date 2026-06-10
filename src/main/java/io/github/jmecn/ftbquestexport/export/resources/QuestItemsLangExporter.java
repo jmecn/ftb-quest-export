@@ -31,7 +31,6 @@ import java.util.TreeSet;
 public final class QuestItemsLangExporter {
 
     public static final String ITEMS_LANG_DIR = "items-lang";
-    /** Full mod lang merge (same role as EMI {@code compose-lang/}); not shipped in bundle. */
     public static final String COMPOSE_LANG_DIR = "compose-lang";
     public static final String DEFAULT_LANGUAGE = "en_us";
 

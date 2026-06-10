@@ -11,7 +11,6 @@ import io.github.jmecn.ftbquestexport.export.icons.QuestItemIconExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestIconExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemNameKeysExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemsIndexExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestItemsLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
 import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
@@ -139,20 +138,6 @@ public final class QuestExportPipeline {
                         "fluids", nameKeys.fluidIds()));
             } catch (IOException e) {
                 FtbQuestExportMod.LOGGER.error("item name-keys export failed", e);
-            }
-        }
-
-        if (scan != null && QuestItemsLangExporter.isEnabled()) {
-            try {
-                QuestLangExporter.exportComposeLang(outputDir, client);
-                QuestItemsLangExporter.Result itemsLang = QuestItemsLangExporter.export(outputDir);
-                QuestItemsLangExporter.deleteComposeLang(outputDir);
-                manifest.put("itemsLang", Map.of(
-                        "locales", itemsLang.localeCount(),
-                        "items", itemsLang.itemCount(),
-                        "files", itemsLang.locales()));
-            } catch (IOException e) {
-                FtbQuestExportMod.LOGGER.error("items-lang export failed", e);
             }
         }
 

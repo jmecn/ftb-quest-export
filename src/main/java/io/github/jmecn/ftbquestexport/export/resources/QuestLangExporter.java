@@ -1,7 +1,6 @@
 package io.github.jmecn.ftbquestexport.export.resources;
 
 import io.github.jmecn.ftbquestexport.export.lang.LangMergerExporter;
-import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 import net.minecraft.client.Minecraft;
 
 import java.io.IOException;
@@ -57,10 +56,4 @@ public final class QuestLangExporter {
                 merged.keysPerLanguage());
     }
 
-    /** Full mod lang merge for {@link QuestItemsLangExporter} ({@code material.*}, {@code tagprefix.*}, …). */
-    public static void exportComposeLang(Path outputDir, Minecraft client) throws IOException {
-        Path composeRoot = outputDir.resolve(QuestItemsLangExporter.COMPOSE_LANG_DIR);
-        FtbQuestExportMod.LOGGER.info("[lang] writing compose-lang for items-lang -> {}", composeRoot);
-        LangMergerExporter.exportTo(composeRoot, client, null, null);
-    }
 }

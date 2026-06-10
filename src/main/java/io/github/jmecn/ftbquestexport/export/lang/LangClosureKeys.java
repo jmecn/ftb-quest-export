@@ -4,6 +4,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Lang keys to pull into {@code lang/<locale>.json} closure for quest-referenced items/fluids.
+ * GT material / tagprefix resolution for display names is done in QuestBook
+ * ({@code gtceu-composed-registry.ts}), not at export time.
+ */
 public final class LangClosureKeys {
 
     private static final String GTCEU = "gtceu";

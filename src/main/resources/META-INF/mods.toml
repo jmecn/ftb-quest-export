@@ -57,3 +57,10 @@ mandatory = true
 versionRange = "[9.0.8,)"
 ordering = "NONE"
 side = "BOTH"
+
+[[dependencies.${mod_id}]]
+modId = "gtceu"
+mandatory = false
+versionRange = "[7.5.3,)"
+ordering = "NONE"
+side = "BOTH"

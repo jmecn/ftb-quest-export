@@ -33,6 +33,16 @@ repositories {
         url = 'https://maven.architectury.dev/'
         content { includeGroup 'dev.architectury' }
     }
+    maven {
+        name = 'GTCEu'
+        url = 'https://maven.gtceu.com'
+        content { includeGroup 'com.gregtechceu.gtceu' }
+    }
+    maven {
+        name = 'LDLib'
+        url = 'https://maven.firstdarkdev.xyz/snapshots/'
+        content { includeGroup 'com.lowdragmc.ldlib' }
+    }
 }
 
 dependencies {
@@ -46,6 +56,9 @@ dependencies {
 
     modCompileOnly "dev.ftb.mods:ftb-filter-system-forge:${ftb_filter_system_version}"
     modRuntimeOnly "dev.ftb.mods:ftb-filter-system-forge:${ftb_filter_system_version}"
+
+    modCompileOnly("com.gregtechceu.gtceu:gtceu-${minecraft_version}:${gtceu_version}:slim") { transitive = false }
+    modCompileOnly("com.lowdragmc.ldlib:ldlib-forge-${minecraft_version}:${ldlib_version}") { transitive = false }
 
     modRuntimeOnly "dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}"
     modRuntimeOnly "dev.architectury:architectury-forge:${architectury_version}"

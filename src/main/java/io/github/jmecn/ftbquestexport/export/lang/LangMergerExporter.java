@@ -34,6 +34,8 @@ import java.util.function.Predicate;
 public final class LangMergerExporter {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    /** Always merged in full — small mod-specific UI set used by QuestBook (e.g. guide links). */
+    private static final String FTBQUESTS_NAMESPACE = "ftbquests";
 
     private LangMergerExporter() {}
 
@@ -86,6 +88,8 @@ public final class LangMergerExporter {
             } else {
                 mergeLangStacksInto(merged, stacks, onlyKeys, stats);
             }
+
+            mergeFullNamespace(client, langFile, FTBQUESTS_NAMESPACE, merged, stats);
 
             if (onlyKeys != null) {
                 VanillaMinecraftLangSupplement.supplement(merged, client, langCode, onlyKeys);
@@ -153,6 +157,30 @@ public final class LangMergerExporter {
     static Map<ResourceLocation, List<Resource>> collectLangStacksForNamespaces(
             Minecraft client, String langFile, Set<String> onlyNamespaces) {
         return collectLangStacks(client, langFile, onlyNamespaces);
+    }
+
+    private static void mergeFullNamespace(
+            Minecraft client,
+            String langFile,
+            String namespace,
+            Map<String, String> merged,
+            MergeStats stats) {
+        Map<ResourceLocation, List<Resource>> stacks =
+                collectLangStacks(client, langFile, Set.of(namespace));
+        if (stacks.isEmpty()) {
+            FtbQuestExportMod.LOGGER.debug(
+                    "{} {} - no lang stacks for namespace {}", LangExportLog.LANG, langFile, namespace);
+            return;
+        }
+        int before = merged.size();
+        mergeLangStacksInto(merged, stacks, null, stats);
+        FtbQuestExportMod.LOGGER.debug(
+                "{} {} - merged full {} lang ({} keys, {} stacks)",
+                LangExportLog.LANG,
+                langFile,
+                namespace,
+                merged.size() - before,
+                stacks.size());
     }
 
     static void mergeLangStacksInto(

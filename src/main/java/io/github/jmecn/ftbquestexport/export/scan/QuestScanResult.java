@@ -147,6 +147,12 @@ public final class QuestScanResult {
         }
     }
 
+    public void addLangKey(String key) {
+        if (key != null && !key.isBlank() && key.contains(".")) {
+            langKeys.add(key);
+        }
+    }
+
     public void collectLangFromText(String text) {
         if (text == null || text.isBlank()) {
             return;

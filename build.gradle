@@ -82,7 +82,7 @@ legacyForge {
             systemProperty 'quest.exportWorldName', 'quest-export'
             systemProperty 'quest.exportWarmupTicks', '100'
             systemProperty 'quest.exportWorldDelayTicks', '60'
-            systemProperty 'quest.exportTimeoutSeconds', '7200'
+            systemProperty 'quest.exportTimeoutSeconds', '1800'
             systemProperty 'quest.exportLanguages', exportLangs
         }
     }

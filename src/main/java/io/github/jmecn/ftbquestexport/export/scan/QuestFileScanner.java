@@ -105,6 +105,8 @@ public final class QuestFileScanner {
         root.put("defaultQuestShape", chapter.getDefaultQuestShape());
         root.put("orderIndex", chapter.getIndex());
         exportChapterDisplay(chapter, root, scan);
+        chapter.getAutofocus().ifPresent(movable ->
+                root.put("autofocusId", QuestObjectBase.getCodeString(movable.getMovableID())));
         scan.addQuestShapeTextures(chapter.getDefaultQuestShape());
 
         List<Map<String, Object>> quests = new ArrayList<>();

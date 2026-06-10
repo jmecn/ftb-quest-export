@@ -13,16 +13,13 @@ import io.github.jmecn.ftbquestexport.export.resources.QuestItemNameKeysExporter
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemsIndexExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestItemsLangExporter;
 import io.github.jmecn.ftbquestexport.export.resources.QuestLangExporter;
-import io.github.jmecn.ftbquestexport.export.resources.QuestTagMembersExporter;
 import io.github.jmecn.ftbquestexport.export.lang.LangClosureKeys;
 import io.github.jmecn.ftbquestexport.export.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.export.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.export.scan.QuestScanResult;
-import io.github.jmecn.ftbquestexport.export.scan.QuestSeedExpander;
 import io.github.jmecn.ftbquestexport.export.write.QuestJsonWriter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.MinecraftServer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,34 +48,16 @@ public final class QuestExportPipeline {
         Minecraft client = Minecraft.getInstance();
 
         QuestScanResult scan = null;
-        MinecraftServer server = client.getSingleplayerServer();
         try {
             QuestFileScanner.ScanBundle bundle = QuestFileScanner.scan();
             scan = bundle.scan();
             QuestJsonWriter.write(outputDir, bundle.index(), bundle.chapters());
             writeFilters(outputDir, scan);
-            if (server != null) {
-                QuestSeedExpander.expandTags(server, scan);
-            } else {
-                FtbQuestExportMod.LOGGER.warn("[export] no integrated server — skipping tag seed expansion");
-            }
             manifest.put("stats", scan.toStatsMap());
             FtbQuestExportMod.LOGGER.info("[export] quests JSON written under {}", outputDir.resolve("quests").toAbsolutePath());
         } catch (Throwable t) {
             FtbQuestExportMod.LOGGER.error("quest scan failed", t);
             manifest.put("error", t.getClass().getSimpleName() + ": " + t.getMessage());
-        }
-
-        if (scan != null && QuestTagMembersExporter.isEnabled() && server != null) {
-            try {
-                QuestTagMembersExporter.Result tags = QuestTagMembersExporter.export(outputDir, server, scan);
-                manifest.put("tagMembers", Map.of(
-                        "tags", tags.tagsRequested(),
-                        "memberRefs", tags.totalMemberRefs(),
-                        "bytes", tags.bytes()));
-            } catch (IOException e) {
-                FtbQuestExportMod.LOGGER.error("tag-members export failed", e);
-            }
         }
 
         QuestClosureResourceExporter.Result resources = null;
@@ -139,7 +118,6 @@ public final class QuestExportPipeline {
                 if (scan != null) {
                     langKeys = LangClosureKeys.mergeClosureLangKeys(
                             langKeys, scan.getItems(), scan.getFluids());
-                    langKeys = LangClosureKeys.mergeTagLangKeys(langKeys, scan.getTags());
                 }
                 QuestLangExporter.Result lang = QuestLangExporter.export(
                         outputDir, client, null, langKeys.isEmpty() ? null : langKeys);
@@ -210,7 +188,6 @@ public final class QuestExportPipeline {
         meta.put("refs", scan.toRefsMap());
         meta.put("taskTypeSupport", defaultTaskTypeSupport());
         meta.put("extras", Map.of(
-                "tagMembers", "extras/tag-members.json",
                 "filters", "extras/filters.json",
                 "fluids", "extras/fluids.json"));
         meta.put("stats", scan.toStatsMap());

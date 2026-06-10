@@ -44,6 +44,9 @@ dependencies {
     modCompileOnly "dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"
     modRuntimeOnly "dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"
 
+    modCompileOnly "dev.ftb.mods:ftb-filter-system-forge:${ftb_filter_system_version}"
+    modRuntimeOnly "dev.ftb.mods:ftb-filter-system-forge:${ftb_filter_system_version}"
+
     modRuntimeOnly "dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}"
     modRuntimeOnly "dev.architectury:architectury-forge:${architectury_version}"
 }

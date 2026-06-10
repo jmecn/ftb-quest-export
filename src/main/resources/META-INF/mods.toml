@@ -38,6 +38,13 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
+modId = "ftbfiltersystem"
+mandatory = true
+versionRange = "[20.0.1,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.${mod_id}]]
 modId = "ftbteams"
 mandatory = true
 versionRange = "[2001.1.4,)"

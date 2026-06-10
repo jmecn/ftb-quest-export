@@ -1,5 +1,12 @@
 package io.github.jmecn.ftbquestexport.export.scan;
 
+import dev.ftb.mods.ftbfiltersystem.api.FTBFilterSystemAPI;
+import dev.ftb.mods.ftbfiltersystem.api.FilterException;
+import dev.ftb.mods.ftbfiltersystem.api.filter.DumpedFilter;
+import dev.ftb.mods.ftbfiltersystem.api.filter.SmartFilter;
+import dev.ftb.mods.ftbfiltersystem.filter.ExpressionFilter;
+import dev.ftb.mods.ftbfiltersystem.filter.ItemFilter;
+import dev.ftb.mods.ftbfiltersystem.filter.ItemTagFilter;
 import io.github.jmecn.ftbquestexport.mod.FtbQuestExportMod;
 
 import net.minecraft.nbt.CompoundTag;
@@ -10,16 +17,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-/** Expands {@code ftbfiltersystem:smart_filter} strings to item id lists. */
+/** Collects explicit {@code item(...)} and tag refs from {@code ftbfiltersystem:smart_filter} strings. */
 public final class SmartFilterExpander {
-
-    private static final Pattern ITEM_TOKEN = Pattern.compile("item\\(([^)]+)\\)");
-    /** {@code item_tag(...)}, {@code block_tag(...)}, {@code fluid_tag(...)}, legacy {@code tag(...)}. */
-    private static final Pattern TAG_TOKEN = Pattern.compile(
-            "(?:item_tag|block_tag|fluid_tag|tag)\\(([^)]+)\\)");
 
     private SmartFilterExpander() {}
 
@@ -27,18 +27,9 @@ public final class SmartFilterExpander {
         if (filterRaw == null || filterRaw.isBlank()) {
             return List.of();
         }
-        Set<String> ids = new LinkedHashSet<>();
-        Matcher matcher = TAG_TOKEN.matcher(filterRaw);
-        while (matcher.find()) {
-            String id = matcher.group(1).trim();
-            if (id.startsWith("#")) {
-                id = id.substring(1);
-            }
-            if (id.contains(":")) {
-                ids.add(id);
-            }
-        }
-        return new ArrayList<>(ids);
+        Set<String> tags = new LinkedHashSet<>();
+        collectRefs(filterRaw, new LinkedHashSet<>(), tags);
+        return new ArrayList<>(tags);
     }
 
     /** Collects item and tag refs from a smart-filter expression into the scan result. */
@@ -46,27 +37,20 @@ public final class SmartFilterExpander {
         if (filterRaw == null || filterRaw.isBlank() || scan == null) {
             return;
         }
-        for (String tagId : extractTags(filterRaw)) {
-            scan.addTag(tagId);
-        }
-        for (String itemId : expandFilterString(filterRaw)) {
-            scan.addItem(itemId);
-        }
+        Set<String> items = new LinkedHashSet<>();
+        Set<String> tags = new LinkedHashSet<>();
+        collectRefs(filterRaw, items, tags);
+        tags.forEach(scan::addTag);
+        items.forEach(scan::addItem);
     }
 
     public static List<String> expandFilterString(String filterRaw) {
         if (filterRaw == null || filterRaw.isBlank()) {
             return List.of();
         }
-        Set<String> ids = new LinkedHashSet<>();
-        Matcher m = ITEM_TOKEN.matcher(filterRaw);
-        while (m.find()) {
-            String id = m.group(1).trim();
-            if (id.contains(":")) {
-                ids.add(id);
-            }
-        }
-        return new ArrayList<>(ids);
+        Set<String> items = new LinkedHashSet<>();
+        collectRefs(filterRaw, items, new LinkedHashSet<>());
+        return new ArrayList<>(items);
     }
 
     public static List<String> expandFromItemStack(ItemStack stack) {
@@ -81,7 +65,9 @@ public final class SmartFilterExpander {
                 if (!expanded.isEmpty()) {
                     return expanded;
                 }
-                FtbQuestExportMod.LOGGER.warn("[filter] could not expand smart_filter: {}", raw);
+                if (extractTags(raw).isEmpty()) {
+                    FtbQuestExportMod.LOGGER.warn("[filter] no explicit item or tag refs in smart_filter: {}", raw);
+                }
                 return List.of();
             }
         }
@@ -97,5 +83,29 @@ public final class SmartFilterExpander {
             return tag.getString("ftbfiltersystem:filter");
         }
         return null;
+    }
+
+    private static void collectRefs(String filterRaw, Set<String> items, Set<String> tags) {
+        try {
+            SmartFilter root = FTBFilterSystemAPI.api().parseFilter(filterRaw);
+            for (DumpedFilter entry : FTBFilterSystemAPI.api().dump(root)) {
+                collectFromFilter(entry.filter(), items, tags);
+            }
+        } catch (FilterException e) {
+            FtbQuestExportMod.LOGGER.warn("[filter] parse failed: {} ({})", filterRaw, e.getMessage());
+        }
+    }
+
+    private static void collectFromFilter(SmartFilter filter, Set<String> items, Set<String> tags) {
+        if (filter instanceof ItemFilter itemFilter) {
+            var itemId = ForgeRegistries.ITEMS.getKey(itemFilter.getMatchItem());
+            if (itemId != null) {
+                items.add(itemId.toString());
+            }
+        } else if (filter instanceof ItemTagFilter tagFilter) {
+            tags.add(tagFilter.getTagKey().location().toString());
+        } else if (filter instanceof ExpressionFilter expressionFilter) {
+            collectRefs(expressionFilter.getExpression(), items, tags);
+        }
     }
 }

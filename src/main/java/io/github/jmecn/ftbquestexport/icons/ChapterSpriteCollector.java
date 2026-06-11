@@ -2,6 +2,7 @@ package io.github.jmecn.ftbquestexport.icons;
 
 import io.github.jmecn.ftbquestexport.QuestExportConstants;
 import io.github.jmecn.ftbquestexport.model.ChapterData;
+import net.minecraft.client.Minecraft;
 import io.github.jmecn.ftbquestexport.model.QuestLink;
 import io.github.jmecn.ftbquestexport.model.QuestNode;
 import io.github.jmecn.ftbquestexport.model.QuestReward;
@@ -12,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashMap;
 
 public final class ChapterSpriteCollector {
 
@@ -29,22 +31,24 @@ public final class ChapterSpriteCollector {
             ChapterData chapterData,
             Map<String, QuestNode> questById,
             double gridScale,
-            Set<String> fluidIds) {
+            Set<String> fluidIds,
+            Minecraft client) {
         Map<String, SpriteNeed> needs = new LinkedHashMap<>();
+        Map<String, Integer> nativeCache = new HashMap<>();
 
         if (chapterData.icon() != null && !chapterData.icon().isBlank()) {
-            upsert(needs, chapterData.icon(), 1.0, gridScale, fluidIds);
+            upsert(needs, chapterData.icon(), 1.0, gridScale, fluidIds, client, nativeCache);
         }
 
         if (chapterData.quests() != null) {
             for (QuestNode quest : chapterData.quests()) {
-                collectQuestNodeSprites(quest, needs, gridScale, fluidIds, true);
+                collectQuestNodeSprites(quest, needs, gridScale, fluidIds, client, nativeCache, true);
             }
         }
 
         if (chapterData.questLinks() != null) {
             for (QuestLink link : chapterData.questLinks()) {
-                collectLinkSprites(link, questById, needs, gridScale, fluidIds);
+                collectLinkSprites(link, questById, needs, gridScale, fluidIds, client, nativeCache);
             }
         }
 
@@ -56,14 +60,16 @@ public final class ChapterSpriteCollector {
             Map<String, SpriteNeed> needs,
             double gridScale,
             Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache,
             boolean includeTasksRewards) {
         for (QuestRefs refs : collectRefsForQuest(quest, gridScale)) {
             for (String ref : refs.refs()) {
-                upsert(needs, ref, refs.innerPx(), refs.outerPx(), fluidIds);
+                upsert(needs, ref, refs.innerPx(), refs.outerPx(), fluidIds, client, nativeCache);
             }
         }
         if (includeTasksRewards) {
-            collectTaskRewardItems(quest, needs, gridScale, fluidIds);
+            collectTaskRewardItems(quest, needs, gridScale, fluidIds, client, nativeCache);
         }
     }
 
@@ -72,7 +78,9 @@ public final class ChapterSpriteCollector {
             Map<String, QuestNode> questById,
             Map<String, SpriteNeed> needs,
             double gridScale,
-            Set<String> fluidIds) {
+            Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache) {
         if (link.linkedQuest() == null || link.linkedQuest().isBlank()) {
             return;
         }
@@ -99,16 +107,21 @@ public final class ChapterSpriteCollector {
             refs.add(QuestExportConstants.MISSING_ICON_REGISTRY_ID);
         }
         for (String ref : refs) {
-            upsert(needs, ref, inner, outer, fluidIds);
+            upsert(needs, ref, inner, outer, fluidIds, client, nativeCache);
         }
     }
 
     private static void collectTaskRewardItems(
-            QuestNode quest, Map<String, SpriteNeed> needs, double gridScale, Set<String> fluidIds) {
-        collectTaskRewardItemList(quest.tasks(), needs, gridScale, fluidIds);
+            QuestNode quest,
+            Map<String, SpriteNeed> needs,
+            double gridScale,
+            Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache) {
+        collectTaskRewardItemList(quest.tasks(), needs, gridScale, fluidIds, client, nativeCache);
         if (quest.rewards() != null) {
             for (QuestReward reward : quest.rewards()) {
-                collectItemRefs(reward.items(), needs, gridScale, fluidIds);
+                collectItemRefs(reward.items(), needs, gridScale, fluidIds, client, nativeCache);
             }
         }
     }
@@ -117,23 +130,30 @@ public final class ChapterSpriteCollector {
             List<QuestTask> tasks,
             Map<String, SpriteNeed> needs,
             double gridScale,
-            Set<String> fluidIds) {
+            Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache) {
         if (tasks == null) {
             return;
         }
         for (QuestTask task : tasks) {
-            collectItemRefs(task.items(), needs, gridScale, fluidIds);
+            collectItemRefs(task.items(), needs, gridScale, fluidIds, client, nativeCache);
         }
     }
 
     private static void collectItemRefs(
-            List<String> items, Map<String, SpriteNeed> needs, double gridScale, Set<String> fluidIds) {
+            List<String> items,
+            Map<String, SpriteNeed> needs,
+            double gridScale,
+            Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache) {
         if (items == null) {
             return;
         }
         for (String ref : items) {
             if (ref != null && !ref.isBlank()) {
-                upsert(needs, ref, 1.0, gridScale, fluidIds);
+                upsert(needs, ref, 1.0, gridScale, fluidIds, client, nativeCache);
             }
         }
     }
@@ -178,15 +198,27 @@ public final class ChapterSpriteCollector {
     }
 
     private static void upsert(
-            Map<String, SpriteNeed> needs, String ref, double size, double gridScale, Set<String> fluidIds) {
+            Map<String, SpriteNeed> needs,
+            String ref,
+            double size,
+            double gridScale,
+            Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache) {
         int outer = QuestIconSizing.questIconPx(size, gridScale);
         int inner = QuestIconSizing.questIconInnerPx(outer);
-        upsert(needs, ref, inner, outer, fluidIds);
+        upsert(needs, ref, inner, outer, fluidIds, client, nativeCache);
     }
 
     private static void upsert(
-            Map<String, SpriteNeed> needs, String ref, int displayInner, int outer, Set<String> fluidIds) {
-        int packTier = QuestIconRefKind.packTier(ref, fluidIds, displayInner);
+            Map<String, SpriteNeed> needs,
+            String ref,
+            int displayInner,
+            int outer,
+            Set<String> fluidIds,
+            Minecraft client,
+            Map<String, Integer> nativeCache) {
+        int packTier = QuestIconRefKind.packTier(client, ref, fluidIds, displayInner, nativeCache);
         String spriteId = ref + "@" + packTier;
         SpriteNeed existing = needs.get(spriteId);
         if (existing == null || packTier > existing.tier()) {

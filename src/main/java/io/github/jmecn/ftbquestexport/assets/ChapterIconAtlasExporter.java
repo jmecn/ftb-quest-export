@@ -74,14 +74,15 @@ public final class ChapterIconAtlasExporter {
                 String filename = entry.getKey();
                 ChapterData chapterData = entry.getValue();
                 try {
-                    Map<String, SpriteNeed> needs =
-                            ChapterSpriteCollector.collectChapterNeeds(chapterData, questById, gridScale, fluidIds);
+                    Map<String, SpriteNeed> needs = ChapterSpriteCollector.collectChapterNeeds(
+                            chapterData, questById, gridScale, fluidIds, client);
                     if (needs.isEmpty()) {
                         continue;
                     }
 
                     List<AtlasPagePlan> plans = buildPlans(needs);
-                    ChapterData updated = applyJsonFields(chapterData, filename, plans, questById, gridScale, fluidIds);
+                    ChapterData updated =
+                            applyJsonFields(chapterData, filename, plans, questById, gridScale, fluidIds, client);
                     chapters.put(filename, updated);
 
                     for (AtlasPagePlan plan : plans) {
@@ -160,7 +161,8 @@ public final class ChapterIconAtlasExporter {
             List<AtlasPagePlan> plans,
             Map<String, QuestNode> questById,
             double gridScale,
-            Set<String> fluidIds) {
+            Set<String> fluidIds,
+            Minecraft client) {
         int pageCount = plans.size();
         LinkedHashMap<String, IconAtlasPage> iconAtlases = new LinkedHashMap<>();
         LinkedHashMap<String, IconSpriteRect> iconSprites = new LinkedHashMap<>();
@@ -179,8 +181,9 @@ public final class ChapterIconAtlasExporter {
         if (updated.quests() != null) {
             List<QuestNode> quests = new ArrayList<>(updated.quests().size());
             for (QuestNode quest : updated.quests()) {
-                QuestNode withDisplay = QuestIconDisplayWriter.attachQuestNodeIconDisplay(quest, gridScale, fluidIds);
-                quests.add(QuestIconDisplayWriter.attachTaskRewardIconDisplays(withDisplay, fluidIds));
+                QuestNode withDisplay =
+                        QuestIconDisplayWriter.attachQuestNodeIconDisplay(quest, gridScale, fluidIds, client);
+                quests.add(QuestIconDisplayWriter.attachTaskRewardIconDisplays(withDisplay, fluidIds, client));
             }
             updated = updated.withQuests(quests);
         }
@@ -197,7 +200,8 @@ public final class ChapterIconAtlasExporter {
                     links.add(link);
                     continue;
                 }
-                links.add(QuestIconDisplayWriter.attachLinkIconDisplay(link, linkedQuest, gridScale, fluidIds));
+                links.add(
+                        QuestIconDisplayWriter.attachLinkIconDisplay(link, linkedQuest, gridScale, fluidIds, client));
             }
             updated = updated.withQuestLinks(links);
         }

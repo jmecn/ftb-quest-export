@@ -42,7 +42,7 @@ public final class QuestExportConstants {
     public static final String CHAPTER_IMAGES_REL_ROOT = "assets/chapter-images";
     public static final int CHAPTER_IMAGE_MIN_FRAME_PX = 16;
 
-    /** Native MC GUI item/fluid art size (minimum atlas tier). */
+    /** Fallback when native icon size cannot be resolved (vanilla default pack). */
     public static final int ITEM_FLUID_ATLAS_PX = 16;
     /** Task/reward row icons in quest detail (QuestBook-React default). */
     public static final int DETAIL_ITEM_ICON_PX = 32;

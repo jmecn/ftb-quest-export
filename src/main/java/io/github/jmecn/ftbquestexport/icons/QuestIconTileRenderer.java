@@ -24,12 +24,10 @@ import java.util.Set;
 
 /**
  * Renders one quest icon atlas cell into a reused {@link OffScreenRenderer}.
- * {@link net.minecraft.world.item.BlockItem}: {@code renderItem} at {@code packTierPx} (16 logical slot in a larger
- * framebuffer). Other items, fluids, and FTB texture icons: fixed 16×16.
+ * {@link net.minecraft.world.item.BlockItem}: {@code renderItem} at display-driven {@code packTierPx}. Other icons
+ * raster at resource-pack native size (no display upscaling).
  */
 public final class QuestIconTileRenderer {
-
-    private static final int ITEM_CELL_PX = OffScreenRenderer.ITEM_LOGICAL_PX;
 
     private QuestIconTileRenderer() {}
 
@@ -53,11 +51,11 @@ public final class QuestIconTileRenderer {
         }
         if (QuestIconRefKind.isItemOrFluid(ref, fluidIds)) {
             if (isFluidRef(ref, fluidIds)) {
-                return captureFluid(client, guiGraphics, bufferSource, renderer, ref);
+                return captureFluid(client, guiGraphics, bufferSource, renderer, ref, packTierPx);
             }
             return captureItem(client, guiGraphics, bufferSource, renderer, ref, packTierPx);
         }
-        return captureFtbIcon(guiGraphics, bufferSource, renderer, ref);
+        return captureFtbIcon(guiGraphics, bufferSource, renderer, ref, packTierPx);
     }
 
     private static boolean isFluidRef(String ref, Set<String> fluidIds) {
@@ -68,8 +66,9 @@ public final class QuestIconTileRenderer {
             GuiGraphics guiGraphics,
             MultiBufferSource.BufferSource bufferSource,
             OffScreenRenderer renderer,
-            String ref) {
-        if (renderer.width() != ITEM_CELL_PX || renderer.height() != ITEM_CELL_PX) {
+            String ref,
+            int packTierPx) {
+        if (renderer.width() != packTierPx || renderer.height() != packTierPx) {
             return false;
         }
         Icon icon = Icon.getIcon(ref);
@@ -79,7 +78,7 @@ public final class QuestIconTileRenderer {
         try {
             renderer.setupFlatGuiRendering();
             renderer.capture(() -> {
-                icon.draw(guiGraphics, 0, 0, ITEM_CELL_PX, ITEM_CELL_PX);
+                icon.draw(guiGraphics, 0, 0, packTierPx, packTierPx);
                 finishDraw(guiGraphics, bufferSource);
             });
             return hasVisiblePixels(renderer);
@@ -122,8 +121,9 @@ public final class QuestIconTileRenderer {
             GuiGraphics guiGraphics,
             MultiBufferSource.BufferSource bufferSource,
             OffScreenRenderer renderer,
-            String registryId) {
-        if (renderer.width() != ITEM_CELL_PX || renderer.height() != ITEM_CELL_PX) {
+            String registryId,
+            int packTierPx) {
+        if (renderer.width() != packTierPx || renderer.height() != packTierPx) {
             return false;
         }
         ResourceLocation loc = ResourceLocation.tryParse(registryId);
@@ -162,7 +162,7 @@ public final class QuestIconTileRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.setShaderColor(fr, fg, fb, fa);
-            guiGraphics.blit(0, 0, 0, ITEM_CELL_PX, ITEM_CELL_PX, sprite);
+            guiGraphics.blit(0, 0, 0, packTierPx, packTierPx, sprite);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             finishDraw(guiGraphics, bufferSource);
         });

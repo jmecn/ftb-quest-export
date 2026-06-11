@@ -274,7 +274,10 @@ public final class ChapterImages {
         Path temp = Files.createTempFile("chapter-image-bake", ".png");
         try (var renderer = new OffScreenRenderer(frameW, frameH)) {
             renderer.setupFlatGuiRendering();
-            renderer.captureAsPng(() -> icon.draw(guiGraphics, 0, 0, frameW, frameH), temp);
+            renderer.captureAsPng(() -> {
+                icon.draw(guiGraphics, 0, 0, frameW, frameH);
+                guiGraphics.flush();
+            }, temp);
             PixelBuffer buffer = PixelBuffer.from(ImageIO.read(temp.toFile()));
             bakeRgbTint(buffer, tint);
             return buffer;

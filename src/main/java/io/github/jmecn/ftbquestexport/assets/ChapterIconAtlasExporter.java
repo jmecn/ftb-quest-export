@@ -8,6 +8,7 @@ import io.github.jmecn.ftbquestexport.icons.MaxRectsPacker;
 import io.github.jmecn.ftbquestexport.icons.MaxRectsPacker.PackItem;
 import io.github.jmecn.ftbquestexport.icons.MaxRectsPacker.PackPage;
 import io.github.jmecn.ftbquestexport.icons.MaxRectsPacker.PackRect;
+import io.github.jmecn.ftbquestexport.icons.MissingIconRenderer;
 import io.github.jmecn.ftbquestexport.icons.OffScreenRenderer;
 import io.github.jmecn.ftbquestexport.icons.QuestIconDisplayWriter;
 import io.github.jmecn.ftbquestexport.icons.QuestIconTileRenderer;
@@ -66,6 +67,7 @@ public final class ChapterIconAtlasExporter {
         MultiBufferSource.BufferSource bufferSource = client.renderBuffers().bufferSource();
         GuiGraphics guiGraphics = new GuiGraphics(client, bufferSource);
         Map<String, NativeImage> tileCache = new HashMap<>();
+        Map<Integer, OffScreenRenderer> renderersByTier = new HashMap<>();
 
         try {
             for (Map.Entry<String, ChapterData> entry : chapters.entrySet()) {
@@ -83,7 +85,15 @@ public final class ChapterIconAtlasExporter {
                     chapters.put(filename, updated);
 
                     for (AtlasPagePlan plan : plans) {
-                        long bytes = renderAtlasPage(outputDir, client, guiGraphics, fluidIds, tileCache, plan);
+                        long bytes = renderAtlasPage(
+                                outputDir,
+                                client,
+                                guiGraphics,
+                                bufferSource,
+                                fluidIds,
+                                tileCache,
+                                renderersByTier,
+                                plan);
                         pngBytes += bytes;
                         atlasFilesWritten++;
                     }
@@ -97,6 +107,9 @@ public final class ChapterIconAtlasExporter {
             }
         } finally {
             bufferSource.endBatch();
+            for (OffScreenRenderer renderer : renderersByTier.values()) {
+                renderer.close();
+            }
             for (NativeImage image : tileCache.values()) {
                 image.close();
             }
@@ -196,8 +209,10 @@ public final class ChapterIconAtlasExporter {
             Path outputDir,
             Minecraft client,
             GuiGraphics guiGraphics,
+            MultiBufferSource.BufferSource bufferSource,
             Set<String> fluidIds,
             Map<String, NativeImage> tileCache,
+            Map<Integer, OffScreenRenderer> renderersByTier,
             AtlasPagePlan plan) throws IOException {
         NativeImage atlas = new NativeImage(plan.width(), plan.height(), true);
         try {
@@ -208,14 +223,14 @@ public final class ChapterIconAtlasExporter {
                 int tier = rect.w();
                 NativeImage tile = tileCache.computeIfAbsent(
                         spriteId,
-                        id -> {
-                            try {
-                                return QuestIconTileRenderer.renderTile(
-                                        client, guiGraphics, outputDir, fluidIds, ref, tier);
-                            } catch (IOException ex) {
-                                throw new IllegalStateException("Failed to render " + id, ex);
-                            }
-                        });
+                        id -> rasterTile(
+                                client,
+                                guiGraphics,
+                                bufferSource,
+                                fluidIds,
+                                renderersByTier,
+                                ref,
+                                tier));
                 OffScreenRenderer.blit(atlas, tile, rect.x(), rect.y());
             }
             Path out = outputDir.resolve(plan.relativeSrc());
@@ -225,6 +240,22 @@ public final class ChapterIconAtlasExporter {
         } finally {
             atlas.close();
         }
+    }
+
+    private static NativeImage rasterTile(
+            Minecraft client,
+            GuiGraphics guiGraphics,
+            MultiBufferSource.BufferSource bufferSource,
+            Set<String> fluidIds,
+            Map<Integer, OffScreenRenderer> renderersByTier,
+            String ref,
+            int tier) {
+        OffScreenRenderer renderer = renderersByTier.computeIfAbsent(tier, t -> new OffScreenRenderer(t, t));
+        if (QuestIconTileRenderer.captureTile(
+                client, guiGraphics, bufferSource, renderer, fluidIds, ref, tier)) {
+            return renderer.copyPixels();
+        }
+        return MissingIconRenderer.create(tier);
     }
 
     private static String atlasRelativePath(String filename, int pageIndex, int pageCount) {

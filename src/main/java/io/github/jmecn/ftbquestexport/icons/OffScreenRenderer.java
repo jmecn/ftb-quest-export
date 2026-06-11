@@ -8,21 +8,28 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL12;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
 
-/** Renders GUI/item icons into an off-screen buffer and writes PNG bytes or files. */
+/**
+ * Off-screen GL capture, aligned with {@code minecraft-web-export} {@code OffScreenRenderer}:
+ * draw into a fixed framebuffer, then {@link #copyPixelsTo} or {@link #copyPixels}.
+ */
 public final class OffScreenRenderer implements AutoCloseable {
 
+    static final int ITEM_LOGICAL_PX = 16;
+
+    private final int width;
+    private final int height;
     private final NativeImage nativeImage;
     private final TextureTarget frameBuffer;
 
     public OffScreenRenderer(int width, int height) {
+        this.width = width;
+        this.height = height;
         RenderSystem.viewport(0, 0, width, height);
         nativeImage = new NativeImage(width, height, true);
         frameBuffer = new TextureTarget(width, height, true, true);
@@ -30,14 +37,28 @@ public final class OffScreenRenderer implements AutoCloseable {
         frameBuffer.clear(true);
     }
 
+    public int width() {
+        return width;
+    }
+
+    public int height() {
+        return height;
+    }
+
     @Override
     public void close() {
         nativeImage.close();
         frameBuffer.destroyBuffers();
 
-        var minecraft = Minecraft.getInstance();
-        var window = minecraft.getWindow();
-        RenderSystem.viewport(0, 0, window.getWidth(), window.getHeight());
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft != null) {
+            var window = minecraft.getWindow();
+            RenderSystem.viewport(0, 0, window.getWidth(), window.getHeight());
+        }
+    }
+
+    public void capture(Runnable runnable) {
+        renderToBuffer(runnable);
     }
 
     public void captureAsPng(Runnable runnable, Path path) throws IOException {
@@ -45,9 +66,8 @@ public final class OffScreenRenderer implements AutoCloseable {
         nativeImage.writeToFile(path);
     }
 
-    /** Renders into the buffer and returns a copy (safe to cache while the renderer is reused). */
-    public NativeImage captureToNativeImage(Runnable runnable) {
-        renderToBuffer(runnable);
+    /** Returns a copy of the last {@link #capture} result. */
+    public NativeImage copyPixels() {
         return copyImage(nativeImage);
     }
 
@@ -59,6 +79,18 @@ public final class OffScreenRenderer implements AutoCloseable {
             }
         }
         return copy;
+    }
+
+    public void copyPixelsTo(NativeImage target, int destX, int destY) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int tx = destX + x;
+                int ty = destY + y;
+                if (tx >= 0 && ty >= 0 && tx < target.getWidth() && ty < target.getHeight()) {
+                    target.setPixelRGBA(tx, ty, nativeImage.getPixelRGBA(x, y));
+                }
+            }
+        }
     }
 
     public static void blit(NativeImage target, NativeImage tile, int x, int y) {
@@ -75,36 +107,28 @@ public final class OffScreenRenderer implements AutoCloseable {
         }
     }
 
-    public boolean isAnimated(Collection<TextureAtlasSprite> sprites) {
-        return false;
-    }
-
-    public void uploadAnimatedFirstFrame(Collection<TextureAtlasSprite> sprites) {
-        // Static first frame is enough for quest icon export.
-    }
-
+    /** Flat GUI / fluid / FTB {@code Icon.draw} — ortho matches framebuffer size. */
     public void setupFlatGuiRendering() {
-        var matrix4f = new Matrix4f().setOrtho(0.0f, 16, 16, 0.0f, 1000.0f, 21000.0f);
-        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
-
-        var poseStack = RenderSystem.getModelViewStack();
-        poseStack.setIdentity();
-        poseStack.translate(0.0f, 0.0f, -11000.0f);
-        RenderSystem.applyModelViewMatrix();
+        setupOrtho(width, height);
         Lighting.setupForFlatItems();
         FogRenderer.setupNoFog();
     }
 
+    /** Item stack rendering — 16×16 logical slot, scaled via pose in the caller. */
     public void setupItemRendering() {
-        var matrix4f = new Matrix4f().setOrtho(0.0f, 16, 16, 0.0f, 1000.0f, 21000.0f);
+        setupOrtho(ITEM_LOGICAL_PX, ITEM_LOGICAL_PX);
+        Lighting.setupFor3DItems();
+        FogRenderer.setupNoFog();
+    }
+
+    private void setupOrtho(float logicalW, float logicalH) {
+        var matrix4f = new Matrix4f().setOrtho(0.0f, logicalW, logicalH, 0.0f, 1000.0f, 21000.0f);
         RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.ORTHOGRAPHIC_Z);
 
         var poseStack = RenderSystem.getModelViewStack();
         poseStack.setIdentity();
         poseStack.translate(0.0f, 0.0f, -11000.0f);
         RenderSystem.applyModelViewMatrix();
-        Lighting.setupFor3DItems();
-        FogRenderer.setupNoFog();
     }
 
     private void renderToBuffer(Runnable runnable) {

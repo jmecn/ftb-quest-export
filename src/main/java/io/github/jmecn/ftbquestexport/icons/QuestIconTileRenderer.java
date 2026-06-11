@@ -6,11 +6,10 @@ import dev.ftb.mods.ftblibrary.icon.Icon;
 import io.github.jmecn.ftbquestexport.QuestExportConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -18,120 +17,129 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.Set;
 
-/** Renders one quest icon atlas cell at {@code packTierPx} (16 / 32 / 64 / 128). */
+/**
+ * Renders one quest icon atlas cell into a reused {@link OffScreenRenderer}.
+ * {@link net.minecraft.world.item.BlockItem}: {@code renderItem} at {@code packTierPx} (16 logical slot in a larger
+ * framebuffer). Other items, fluids, and FTB texture icons: fixed 16×16.
+ */
 public final class QuestIconTileRenderer {
 
-    private static final int GUI_ITEM_PX = QuestExportConstants.ITEM_FLUID_ATLAS_PX;
+    private static final int ITEM_CELL_PX = OffScreenRenderer.ITEM_LOGICAL_PX;
 
     private QuestIconTileRenderer() {}
 
-    public static NativeImage renderTile(
+    /**
+     * @return {@code true} when GL pixels were captured; {@code false} → caller should use
+     *         {@link MissingIconRenderer#create(int)}.
+     */
+    public static boolean captureTile(
             Minecraft client,
             GuiGraphics guiGraphics,
-            Path outputDir,
+            MultiBufferSource.BufferSource bufferSource,
+            OffScreenRenderer renderer,
             Set<String> fluidIds,
             String ref,
-            int packTierPx) throws IOException {
+            int packTierPx) {
         if (ref == null || ref.isBlank()) {
-            return MissingIconRenderer.create(packTierPx);
+            return false;
+        }
+        if (QuestExportConstants.MISSING_ICON_REGISTRY_ID.equals(ref)) {
+            return false;
         }
         if (QuestIconRefKind.isItemOrFluid(ref, fluidIds)) {
-            NativeImage icon = renderFtbIcon(client, guiGraphics, ref, packTierPx);
-            if (icon != null) {
-                return icon;
+            if (isFluidRef(ref, fluidIds)) {
+                return captureFluid(client, guiGraphics, bufferSource, renderer, ref);
             }
-            if (fluidIds != null && fluidIds.contains(ref)) {
-                NativeImage fluid = renderFluid(client, guiGraphics, ref, packTierPx);
-                if (fluid != null) {
-                    return fluid;
-                }
-            }
-            NativeImage item = renderItem(client, guiGraphics, ref, packTierPx);
-            if (item != null) {
-                return item;
-            }
-            return MissingIconRenderer.create(packTierPx);
+            return captureItem(client, guiGraphics, bufferSource, renderer, ref, packTierPx);
         }
-        NativeImage texture = renderTextureIcon(client, guiGraphics, outputDir, ref, packTierPx);
-        if (texture != null) {
-            return texture;
-        }
-        return MissingIconRenderer.create(packTierPx);
+        return captureFtbIcon(guiGraphics, bufferSource, renderer, ref);
     }
 
-    private static NativeImage renderFtbIcon(
-            Minecraft client, GuiGraphics guiGraphics, String ref, int packTierPx) throws IOException {
+    private static boolean isFluidRef(String ref, Set<String> fluidIds) {
+        return fluidIds != null && fluidIds.contains(ref);
+    }
+
+    private static boolean captureFtbIcon(
+            GuiGraphics guiGraphics,
+            MultiBufferSource.BufferSource bufferSource,
+            OffScreenRenderer renderer,
+            String ref) {
+        if (renderer.width() != ITEM_CELL_PX || renderer.height() != ITEM_CELL_PX) {
+            return false;
+        }
         Icon icon = Icon.getIcon(ref);
         if (icon == null || icon.isEmpty()) {
-            return null;
+            return false;
         }
-        try (OffScreenRenderer renderer = new OffScreenRenderer(packTierPx, packTierPx)) {
+        try {
             renderer.setupFlatGuiRendering();
-            return renderer.captureToNativeImage(() -> icon.draw(guiGraphics, 0, 0, packTierPx, packTierPx));
+            renderer.capture(() -> {
+                icon.draw(guiGraphics, 0, 0, ITEM_CELL_PX, ITEM_CELL_PX);
+                finishDraw(guiGraphics, bufferSource);
+            });
+            return hasVisiblePixels(renderer);
         } catch (Exception ignored) {
-            return null;
+            return false;
         }
     }
 
-    private static NativeImage renderItem(
-            Minecraft client, GuiGraphics guiGraphics, String registryId, int packTierPx) throws IOException {
+    private static boolean captureItem(
+            Minecraft client,
+            GuiGraphics guiGraphics,
+            MultiBufferSource.BufferSource bufferSource,
+            OffScreenRenderer renderer,
+            String registryId,
+            int packTierPx) {
+        if (renderer.width() != packTierPx || renderer.height() != packTierPx) {
+            return false;
+        }
         ResourceLocation loc = ResourceLocation.tryParse(registryId);
         if (loc == null) {
-            return null;
+            return false;
         }
         Item item = ForgeRegistries.ITEMS.getValue(loc);
         if (item == null || item == Items.AIR) {
-            return null;
+            return false;
         }
 
         ItemStack stack = new ItemStack(item);
-        float scale = packTierPx / (float) GUI_ITEM_PX;
-        try (OffScreenRenderer renderer = new OffScreenRenderer(packTierPx, packTierPx)) {
-            renderer.setupItemRendering();
-            Set<TextureAtlasSprite> sprites = collectSprites(client, stack);
-            if (renderer.isAnimated(sprites)) {
-                renderer.uploadAnimatedFirstFrame(sprites);
-            }
-            Runnable draw = () -> {
-                guiGraphics.pose().pushPose();
-                guiGraphics.pose().scale(scale, scale, 1.0F);
-                guiGraphics.renderItem(stack, 0, 0);
-                guiGraphics.renderItemDecorations(client.font, stack, 0, 0, "");
-                guiGraphics.pose().popPose();
-            };
-            return renderer.captureToNativeImage(draw);
-        }
+        renderer.setupItemRendering();
+        renderer.capture(() -> {
+            guiGraphics.renderItem(stack, 0, 0);
+            guiGraphics.renderItemDecorations(client.font, stack, 0, 0, "");
+            finishDraw(guiGraphics, bufferSource);
+        });
+        return hasVisiblePixels(renderer);
     }
 
-    private static NativeImage renderFluid(
-            Minecraft client, GuiGraphics guiGraphics, String registryId, int packTierPx) throws IOException {
+    private static boolean captureFluid(
+            Minecraft client,
+            GuiGraphics guiGraphics,
+            MultiBufferSource.BufferSource bufferSource,
+            OffScreenRenderer renderer,
+            String registryId) {
+        if (renderer.width() != ITEM_CELL_PX || renderer.height() != ITEM_CELL_PX) {
+            return false;
+        }
         ResourceLocation loc = ResourceLocation.tryParse(registryId);
         if (loc == null) {
-            return null;
+            return false;
         }
         Fluid fluid = ForgeRegistries.FLUIDS.getValue(loc);
         if (fluid == null || fluid.isSame(Fluids.EMPTY)) {
-            return null;
+            return false;
         }
 
         IClientFluidTypeExtensions extensions = IClientFluidTypeExtensions.of(fluid);
         FluidStack stack = new FluidStack(fluid, 1000);
         ResourceLocation still = extensions.getStillTexture(stack);
         if (still == null) {
-            return null;
+            return false;
         }
 
         TextureAtlas atlas = client.getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS);
@@ -144,95 +152,41 @@ public final class QuestIconTileRenderer {
         if (a <= 0.0F) {
             a = 1.0F;
         }
+        float fa = a;
         float fr = r;
         float fg = g;
         float fb = b;
-        float fa = a;
 
-        try (OffScreenRenderer renderer = new OffScreenRenderer(packTierPx, packTierPx)) {
-            renderer.setupFlatGuiRendering();
-            Runnable draw = () -> {
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                RenderSystem.setShaderColor(fr, fg, fb, fa);
-                guiGraphics.blit(0, 0, 0, packTierPx, packTierPx, sprite);
-                RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            };
-            return renderer.captureToNativeImage(draw);
-        }
+        renderer.setupFlatGuiRendering();
+        renderer.capture(() -> {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.setShaderColor(fr, fg, fb, fa);
+            guiGraphics.blit(0, 0, 0, ITEM_CELL_PX, ITEM_CELL_PX, sprite);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            finishDraw(guiGraphics, bufferSource);
+        });
+        return hasVisiblePixels(renderer);
     }
 
-    private static NativeImage renderTextureIcon(
-            Minecraft client,
-            GuiGraphics guiGraphics,
-            Path outputDir,
-            String ref,
-            int tierPx) throws IOException {
-        NativeImage icon = renderFtbIcon(client, guiGraphics, ref, tierPx);
-        if (icon != null) {
-            return icon;
-        }
-        return loadTextureAsset(outputDir, ref, tierPx);
+    private static void finishDraw(GuiGraphics guiGraphics, MultiBufferSource.BufferSource bufferSource) {
+        guiGraphics.flush();
+        bufferSource.endBatch();
     }
 
-    private static NativeImage renderMissing(int tierPx) {
-        NativeImage tile = new NativeImage(tierPx, tierPx, true);
-        int cell = Math.max(1, tierPx / 2);
-        for (int y = 0; y < tierPx; y++) {
-            for (int x = 0; x < tierPx; x++) {
-                boolean magenta = ((x / cell) + (y / cell)) % 2 == 0;
-                int color = magenta ? QuestExportConstants.MISSING_ICON_MAGENTA
-                        : QuestExportConstants.MISSING_ICON_BLACK;
-                tile.setPixelRGBA(x, y, color);
+    private static boolean hasVisiblePixels(OffScreenRenderer renderer) {
+        NativeImage image = renderer.copyPixels();
+        try {
+            for (int y = 0; y < image.getHeight(); y++) {
+                for (int x = 0; x < image.getWidth(); x++) {
+                    if ((image.getPixelRGBA(x, y) >>> 24) != 0) {
+                        return true;
+                    }
+                }
             }
-        }
-        return tile;
-    }
-
-    private static NativeImage loadTextureAsset(Path outputDir, String ref, int tierPx) throws IOException {
-        Path source = IconPathResolver.resolveExportedTexture(outputDir, ref);
-        if (source == null || !Files.isRegularFile(source)) {
-            return null;
-        }
-        try (InputStream in = Files.newInputStream(source)) {
-            NativeImage image = NativeImage.read(in);
-            if (image.getWidth() == tierPx && image.getHeight() == tierPx) {
-                return image;
-            }
-            NativeImage resized = resizeNearest(image, tierPx, tierPx);
+            return false;
+        } finally {
             image.close();
-            return resized;
         }
-    }
-
-    private static NativeImage resizeNearest(NativeImage source, int width, int height) {
-        NativeImage out = new NativeImage(width, height, true);
-        int srcW = source.getWidth();
-        int srcH = source.getHeight();
-        for (int y = 0; y < height; y++) {
-            int sy = y * srcH / height;
-            for (int x = 0; x < width; x++) {
-                int sx = x * srcW / width;
-                out.setPixelRGBA(x, y, source.getPixelRGBA(sx, sy));
-            }
-        }
-        return out;
-    }
-
-    private static Set<TextureAtlasSprite> collectSprites(Minecraft client, ItemStack stack) {
-        BakedModel model = client.getItemRenderer().getModel(stack, null, null, 0);
-        return guessSprites(Set.of(model));
-    }
-
-    private static Set<TextureAtlasSprite> guessSprites(Collection<BakedModel> models) {
-        Set<TextureAtlasSprite> result =
-                Collections.newSetFromMap(new IdentityHashMap<TextureAtlasSprite, Boolean>());
-        RandomSource random = RandomSource.create(0);
-        for (BakedModel model : models) {
-            for (var quad : model.getQuads(null, null, random, ModelData.EMPTY, null)) {
-                result.add(quad.getSprite());
-            }
-        }
-        return result;
     }
 }

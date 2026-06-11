@@ -1,14 +1,21 @@
 package io.github.jmecn.ftbquestexport.icons;
 
 import io.github.jmecn.ftbquestexport.QuestExportConstants;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Set;
 
 /**
- * Quest icon refs fall into two render classes (pack tier is the same for both):
+ * Atlas raster resolution:
  * <ul>
- *   <li>Registry item / fluid — off-screen {@code renderItem} / fluid blit, scaled to {@code ceilToTier(innerPx)}.</li>
- *   <li>Texture / FTB {@link dev.ftb.mods.ftblibrary.icon.Icon} — {@code Icon.draw} at {@code ceilToTier(innerPx)}.</li>
+ *   <li>{@link BlockItem} — {@code ceilToTier(innerPx)} off-screen {@code renderItem}; 3D GUI model benefits from
+ *       extra pixels when displayed large.</li>
+ *   <li>Other registry items, fluids, FTB texture / block-face {@link dev.ftb.mods.ftblibrary.icon.Icon} refs —
+ *       fixed {@value io.github.jmecn.ftbquestexport.QuestExportConstants#ITEM_FLUID_ATLAS_PX}×
+ *       px (square atlas pixels; upscaling has no benefit).</li>
  * </ul>
  */
 public final class QuestIconRefKind {
@@ -43,9 +50,29 @@ public final class QuestIconRefKind {
                 || path.endsWith(".png"));
     }
 
-    /** Atlas raster size from on-screen innerPx (16 / 32 / 64 / 128). */
+    /** Registry {@link BlockItem} id ({@code mod:block_name}), not an FTB {@code mod:block/texture} ref. */
+    public static boolean isBlockItemRef(String ref) {
+        if (!isRegistryItemRef(ref)) {
+            return false;
+        }
+        ResourceLocation loc = ResourceLocation.tryParse(ref);
+        if (loc == null) {
+            return false;
+        }
+        Item item = ForgeRegistries.ITEMS.getValue(loc);
+        return item instanceof BlockItem;
+    }
+
+    /** Atlas cell edge length: tiered only for {@link BlockItem}; otherwise 16. */
     public static int packTier(String ref, Set<String> fluidIds, int displayInnerPx) {
-        int tier = QuestIconSizing.ceilToTier(displayInnerPx);
-        return Math.max(QuestExportConstants.ITEM_FLUID_ATLAS_PX, tier);
+        if (isBlockItemRef(ref)) {
+            return QuestIconSizing.ceilToTier(displayInnerPx);
+        }
+        return QuestExportConstants.ITEM_FLUID_ATLAS_PX;
+    }
+
+    /** FTB texture / block-face / gui icon ref (not a registry item id). */
+    public static boolean isTextureIconRef(String ref) {
+        return ref != null && !ref.isBlank() && !isRegistryItemRef(ref);
     }
 }

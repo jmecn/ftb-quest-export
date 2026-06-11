@@ -38,7 +38,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Reads FTB Quests runtime graph into scan result + JSON-friendly models. */
 public final class QuestFileScanner {
 
     private QuestFileScanner() {}
@@ -98,7 +97,8 @@ public final class QuestFileScanner {
                 gridScale,
                 defaultQuestShape,
                 groups,
-                chapterIndex);
+                chapterIndex,
+                null);
 
         FtbQuestExportMod.LOGGER.info("[scan] {} chapters, {} quests, {} tasks",
                 scan.getChapterCount(), scan.getQuestCount(), scan.getTaskCount());

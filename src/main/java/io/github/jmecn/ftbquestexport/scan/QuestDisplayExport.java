@@ -16,11 +16,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Mirrors FTB Quests {@code QuestObjectBase.getTitle()} / {@code getIcon()} for web export:
- * custom raw fields when set, otherwise first-task title and task-derived icons
- * (including {@link IconAnimation} frames).
- */
 public final class QuestDisplayExport {
 
     private QuestDisplayExport() {}

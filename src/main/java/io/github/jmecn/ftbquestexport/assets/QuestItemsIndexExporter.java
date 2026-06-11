@@ -48,7 +48,7 @@ public final class QuestItemsIndexExporter {
 
         Path out = outputDir.resolve(QuestExportConstants.ITEMS_INDEX_FILE);
         Files.createDirectories(out.getParent());
-        String json = QuestExportJson.PRETTY.toJson(root) + "\n";
+        String json = QuestExportJson.GSON.toJson(root);
         Files.writeString(out, json, StandardCharsets.UTF_8);
 
         int itemRefs = scan.getItems().size();

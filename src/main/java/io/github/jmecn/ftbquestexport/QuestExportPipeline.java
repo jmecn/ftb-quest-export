@@ -3,6 +3,7 @@ package io.github.jmecn.ftbquestexport;
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import io.github.jmecn.ftbquestexport.assets.ChapterIconAtlasExporter;
 import io.github.jmecn.ftbquestexport.assets.ChapterImageExporter;
+import io.github.jmecn.ftbquestexport.assets.FtbQuestShapeAtlasExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestAssetExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestItemNameKeysExporter;
@@ -10,6 +11,7 @@ import io.github.jmecn.ftbquestexport.assets.QuestItemsIndexExporter;
 import io.github.jmecn.ftbquestexport.lang.QuestLangKeys;
 import io.github.jmecn.ftbquestexport.lang.LangMergerExporter;
 import io.github.jmecn.ftbquestexport.lang.QuestSearchIndexExporter;
+import io.github.jmecn.ftbquestexport.model.ChapterData;
 import io.github.jmecn.ftbquestexport.pojo.AssetExportManifestSection;
 import io.github.jmecn.ftbquestexport.pojo.AssetExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ChapterIconAtlasExportResult;
@@ -26,11 +28,12 @@ import io.github.jmecn.ftbquestexport.pojo.LangExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ManifestExportSize;
 import io.github.jmecn.ftbquestexport.pojo.QuestSearchIndexExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ScanBundle;
+import io.github.jmecn.ftbquestexport.pojo.ShapeAtlasExportResult;
+import io.github.jmecn.ftbquestexport.model.QuestIndex;
 import io.github.jmecn.ftbquestexport.model.SearchIndexManifestSection;
 import io.github.jmecn.ftbquestexport.scan.QuestFileScanner;
 import io.github.jmecn.ftbquestexport.scan.QuestRichTextScan;
 import io.github.jmecn.ftbquestexport.scan.QuestScanResult;
-import io.github.jmecn.ftbquestexport.write.QuestJsonWriter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -75,7 +78,7 @@ public final class QuestExportPipeline {
                 }
             }
 
-            QuestJsonWriter.write(outputDir, bundle.index(), bundle.chapters());
+            write(outputDir, bundle.index(), bundle.chapters());
             writeFilters(outputDir, scan);
             manifest.stats(scan.toStats());
             FtbQuestExportMod.LOGGER.info("[export] quests JSON written under {}", outputDir.resolve("quests").toAbsolutePath());
@@ -96,6 +99,20 @@ public final class QuestExportPipeline {
             }
         }
 
+        if (bundle != null && scan != null) {
+            try {
+                ShapeAtlasExportResult shapeAtlas = FtbQuestShapeAtlasExporter.export(outputDir, client, scan);
+                manifest.shapeAtlas(shapeAtlas);
+                if (shapeAtlas.shapeAtlas() != null) {
+                    QuestIndex indexWithShapes = bundle.index().withShapeAtlas(shapeAtlas.shapeAtlas());
+                    writeIndex(outputDir, indexWithShapes);
+                }
+            } catch (Throwable t) {
+                FtbQuestExportMod.LOGGER.error("shape atlas export failed", t);
+                manifest.shapeAtlasExportError(t.getClass().getSimpleName() + ": " + t.getMessage());
+            }
+        }
+
         if (bundle != null && scan != null && ChapterIconAtlasExporter.isEnabled()) {
             try {
                 ChapterIconAtlasExportResult chapterAtlases = ChapterIconAtlasExporter.export(
@@ -104,7 +121,7 @@ public final class QuestExportPipeline {
                         bundle.chapters(),
                         client,
                         scan.getFluids());
-                QuestJsonWriter.writeChapters(outputDir, bundle.chapters());
+                writeChapters(outputDir, bundle.chapters());
                 manifest.chapterIconAtlases(chapterAtlases);
             } catch (Throwable t) {
                 FtbQuestExportMod.LOGGER.error("chapter icon atlas export failed", t);
@@ -184,13 +201,37 @@ public final class QuestExportPipeline {
         return Component.literal("[ftb-quest-export] → " + outputDir.toAbsolutePath());
     }
 
+
+    public static void write(Path outputDir, QuestIndex index, Map<String, ChapterData> chapters)
+            throws IOException {
+        Path questsRoot = outputDir.resolve("quests");
+        Files.createDirectories(questsRoot.resolve("chapters"));
+        Files.writeString(questsRoot.resolve("index.json"), QuestExportJson.GSON.toJson(index));
+        writeChapters(outputDir, chapters);
+    }
+
+    public static void writeIndex(Path outputDir, QuestIndex index) throws IOException {
+        Path questsRoot = outputDir.resolve("quests");
+        Files.createDirectories(questsRoot);
+        Files.writeString(questsRoot.resolve("index.json"), QuestExportJson.GSON.toJson(index));
+    }
+
+    public static void writeChapters(Path outputDir, Map<String, ChapterData> chapters) throws IOException {
+        Path chaptersRoot = outputDir.resolve("quests/chapters");
+        Files.createDirectories(chaptersRoot);
+        for (Map.Entry<String, ChapterData> entry : chapters.entrySet()) {
+            Path chapterFile = chaptersRoot.resolve(entry.getKey() + ".json");
+            Files.writeString(chapterFile, QuestExportJson.GSON.toJson(entry.getValue()));
+        }
+    }
+
     private static void writeFilters(Path outputDir, QuestScanResult scan) throws IOException {
         if (scan.getExpandedFilters().isEmpty()) {
             return;
         }
         Path out = outputDir.resolve("extras/filters.json");
         Files.createDirectories(out.getParent());
-        Files.writeString(out, QuestExportJson.PRETTY.toJson(scan.getExpandedFilters()));
+        Files.writeString(out, QuestExportJson.GSON.toJson(scan.getExpandedFilters()));
     }
 
     private static void writeMeta(
@@ -203,7 +244,7 @@ public final class QuestExportPipeline {
                 new ExportMetaExtras("extras/filters.json", "extras/fluids.json"),
                 scan.toStats(),
                 resources != null ? ExportMetaAssets.from(resources) : null);
-        Files.writeString(outputDir.resolve("meta.json"), QuestExportJson.PRETTY.toJson(meta));
+        Files.writeString(outputDir.resolve("meta.json"), QuestExportJson.GSON.toJson(meta));
     }
 
     private static Map<String, String> defaultTaskTypeSupport() {
@@ -220,6 +261,6 @@ public final class QuestExportPipeline {
     }
 
     private static void writeManifest(Path outputDir, ExportManifest manifest) throws IOException {
-        Files.writeString(outputDir.resolve("manifest.json"), QuestExportJson.PRETTY.toJson(manifest));
+        Files.writeString(outputDir.resolve("manifest.json"), QuestExportJson.GSON.toJson(manifest));
     }
 }

@@ -37,7 +37,7 @@ public final class QuestFluidExporter {
         }
 
         Files.createDirectories(out.getParent());
-        String json = QuestExportJson.PRETTY.toJson(root);
+        String json = QuestExportJson.GSON.toJson(root);
         Files.writeString(out, json);
         FtbQuestExportMod.LOGGER.info("[fluids] wrote {} entries ({} bytes)", root.size(), json.length());
         return new FluidExportResult(root.size(), json.length());

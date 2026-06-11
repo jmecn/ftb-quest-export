@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** Collects lang keys and texture refs from FTB Quests rich text. */
 public final class QuestRichTextScan {
 
     private QuestRichTextScan() {}

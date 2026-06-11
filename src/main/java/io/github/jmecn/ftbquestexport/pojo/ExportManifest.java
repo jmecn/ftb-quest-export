@@ -12,6 +12,8 @@ public record ExportManifest(
         String chapterImageExportError,
         ChapterIconAtlasExportResult chapterIconAtlases,
         String chapterIconAtlasExportError,
+        ShapeAtlasExportResult shapeAtlas,
+        String shapeAtlasExportError,
         FluidExportResult fluids,
         ItemsIndexExportResult itemsIndex,
         LangExportResult lang,

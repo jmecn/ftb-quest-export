@@ -87,7 +87,7 @@ public final class QuestItemNameKeysExporter {
 
         Path out = outputDir.resolve(QuestExportConstants.ITEM_NAME_KEYS_FILE);
         Files.createDirectories(out.getParent());
-        Files.writeString(out, QuestExportJson.PRETTY.toJson(root) + "\n", StandardCharsets.UTF_8);
+        Files.writeString(out, QuestExportJson.GSON.toJson(root), StandardCharsets.UTF_8);
 
         FtbQuestExportMod.LOGGER.info("[name-keys] {} registry ids ({} fluids) -> {}", items.size(), fluidCount, out);
         return new ItemNameKeysExportResult(items.size() - fluidCount, fluidCount);

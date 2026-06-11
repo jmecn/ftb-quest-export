@@ -5,10 +5,10 @@ import io.github.jmecn.ftbquestexport.QuestExportConstants;
 import java.util.Set;
 
 /**
- * Quest icon refs fall into two packing/render classes:
+ * Quest icon refs fall into two render classes (pack tier is the same for both):
  * <ul>
- *   <li>Registry item / fluid — 16×16 GUI art; atlas cell {@link QuestExportConstants#ITEM_FLUID_ATLAS_PX} (no upscale).</li>
- *   <li>Texture / block-style FTB icon — off-screen at {@code ceilToTier(innerPx)} (16 / 32 / 64 / 128).</li>
+ *   <li>Registry item / fluid — off-screen {@code renderItem} / fluid blit, scaled to {@code ceilToTier(innerPx)}.</li>
+ *   <li>Texture / FTB {@link dev.ftb.mods.ftblibrary.icon.Icon} — {@code Icon.draw} at {@code ceilToTier(innerPx)}.</li>
  * </ul>
  */
 public final class QuestIconRefKind {
@@ -43,11 +43,9 @@ public final class QuestIconRefKind {
                 || path.endsWith(".png"));
     }
 
-    /** Atlas raster size for this ref (not the on-screen innerPx). */
+    /** Atlas raster size from on-screen innerPx (16 / 32 / 64 / 128). */
     public static int packTier(String ref, Set<String> fluidIds, int displayInnerPx) {
-        if (isItemOrFluid(ref, fluidIds)) {
-            return QuestExportConstants.ITEM_FLUID_ATLAS_PX;
-        }
-        return QuestIconSizing.ceilToTier(displayInnerPx);
+        int tier = QuestIconSizing.ceilToTier(displayInnerPx);
+        return Math.max(QuestExportConstants.ITEM_FLUID_ATLAS_PX, tier);
     }
 }

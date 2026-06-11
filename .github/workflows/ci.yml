@@ -1,0 +1,178 @@
+name: CI
+
+on:
+  push:
+    branches: ["dev"]
+  workflow_dispatch:
+    inputs:
+      modpack_tag:
+        description: Modpack-Modern release tag
+        required: false
+        default: ""
+      export_warmup_ticks:
+        description: Ticks after quest load before export
+        required: false
+        default: ""
+
+concurrency:
+  group: fqe-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+          cache: gradle
+
+      - name: Build jar
+        run: |
+          chmod +x gradlew
+          ./gradlew jar --no-daemon
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: ftb-quest-export-jar
+          path: build/libs/ftb-quest-export-*.jar
+          if-no-files-found: error
+
+  export:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Download jar
+        uses: actions/download-artifact@v4
+        with:
+          name: ftb-quest-export-jar
+          path: build/libs
+
+      - name: Resolve jar path
+        run: |
+          jar="$(ls build/libs/ftb-quest-export-*.jar | head -1)"
+          echo "FQE_JAR_PATH=${{ github.workspace }}/$jar" >> "$GITHUB_ENV"
+          ls -lh "$jar"
+
+      - name: Load config
+        run: bash ci/run.sh env
+
+      - name: Prepare export
+        id: metadata
+        env:
+          MODPACK_TAG: ${{ github.event.inputs.modpack_tag }}
+        run: bash ci/run.sh prepare-export
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+
+      - name: Export languages
+        id: export_languages
+        run: bash ci/run.sh export-languages
+
+      - name: Fetch mods
+        working-directory: ${{ env.MODPACK_DIR }}
+        run: java -jar pakku.jar fetch
+
+      - name: Restore HMC cache
+        id: hmc-restore
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.RUNNER_HOME }}/.minecraft
+          key: hmc-${{ env.MC_VERSION }}-forge-${{ env.FORGE_BUILD }}
+          restore-keys: |
+            hmc-${{ env.MC_VERSION }}-forge-
+            hmc-${{ env.MC_VERSION }}-
+
+      - name: Restore world cache
+        id: world-restore
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.MODPACK_DIR }}/saves/quest-export
+          key: quest-export-${{ env.MC_VERSION }}-${{ hashFiles(format('{0}/pakku-lock.json', env.MODPACK_DIR)) }}
+          restore-keys: quest-export-${{ env.MC_VERSION }}-
+
+      - name: Prepare game
+        run: bash ci/run.sh prepare-game
+
+      - name: Run export
+        env:
+          ALSOFT_DRIVERS: "null"
+          FQE_JVM_FLAGS: >-
+            -Xmx12G
+            -Xms4G
+            -XX:+UseG1GC
+            -Djava.awt.headless=false
+            -Dmodernfix.config.mixin.feature.integrated_server_watchdog=false
+            -Dquest.export.runAndExit=true
+            -Dquest.export.outputDir=${{ env.EXPORT_ROOT }}
+            -Dquest.exportWorldName=quest-export
+            -Dquest.exportWarmupTicks=${{ github.event.inputs.export_warmup_ticks || env.EXPORT_WARMUP_TICKS }}
+            -Dquest.exportWorldDelayTicks=${{ env.EXPORT_WORLD_DELAY_TICKS }}
+            -Dquest.exportTimeoutSeconds=${{ env.EXPORT_TIMEOUT_SECONDS }}
+            -Dquest.exportLanguages=${{ steps.export_languages.outputs.export_languages }}
+        run: bash ci/run.sh launch-export
+
+      - name: Save world cache
+        if: success() && steps.world-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.MODPACK_DIR }}/saves/quest-export
+          key: ${{ steps.world-restore.outputs.cache-primary-key }}
+
+      - name: Save HMC cache
+        if: success() && steps.hmc-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.RUNNER_HOME }}/.minecraft
+          key: ${{ steps.hmc-restore.outputs.cache-primary-key }}
+
+      - name: Package export
+        id: package
+        run: bash ci/run.sh package-export
+
+      - name: Upload export bundle
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_ARTIFACT_NAME }}-${{ steps.metadata.outputs.bundle_id }}
+          path: quest-export-${{ steps.metadata.outputs.bundle_id }}.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Collect debug
+        if: failure()
+        run: bash ci/run.sh collect-export-debug
+
+      - name: Upload debug
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-debug-${{ steps.metadata.outputs.bundle_id }}
+          path: ci-debug/
+          if-no-files-found: ignore
+          retention-days: 1

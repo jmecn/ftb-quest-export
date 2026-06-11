@@ -3,6 +3,14 @@
 build/
 run/
 
+# CI / export artifacts
+Modpack-Modern/
+export/
+quest-export-*.tar.gz
+headlessmc-launcher-*.jar
+HeadlessMC/
+ci-debug/
+
 # IDE
 .idea/
 *.iml

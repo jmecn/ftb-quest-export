@@ -9,5 +9,18 @@ public record QuestIndex(
         double gridScale,
         String defaultQuestShape,
         List<ChapterGroup> chapterGroups,
-        List<ChapterSummary> chapters) {
+        List<ChapterSummary> chapters,
+        ShapeAtlas shapeAtlas) {
+
+    public QuestIndex withShapeAtlas(ShapeAtlas shapeAtlas) {
+        return new QuestIndex(
+                title,
+                version,
+                progressionMode,
+                gridScale,
+                defaultQuestShape,
+                chapterGroups,
+                chapters,
+                shapeAtlas);
+    }
 }

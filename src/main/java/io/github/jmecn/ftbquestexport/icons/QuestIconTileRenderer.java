@@ -31,11 +31,10 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Set;
 
-/**
- * Renders one quest icon atlas cell. Item/fluid tiles are {@link QuestExportConstants#ITEM_FLUID_ATLAS_PX};
- * texture/block FTB icons are drawn off-screen at {@code packTierPx}.
- */
+/** Renders one quest icon atlas cell at {@code packTierPx} (16 / 32 / 64 / 128). */
 public final class QuestIconTileRenderer {
+
+    private static final int GUI_ITEM_PX = QuestExportConstants.ITEM_FLUID_ATLAS_PX;
 
     private QuestIconTileRenderer() {}
 
@@ -47,30 +46,48 @@ public final class QuestIconTileRenderer {
             String ref,
             int packTierPx) throws IOException {
         if (ref == null || ref.isBlank()) {
-            return renderMissing(QuestExportConstants.ITEM_FLUID_ATLAS_PX);
+            return MissingIconRenderer.create(packTierPx);
         }
         if (QuestIconRefKind.isItemOrFluid(ref, fluidIds)) {
+            NativeImage icon = renderFtbIcon(client, guiGraphics, ref, packTierPx);
+            if (icon != null) {
+                return icon;
+            }
             if (fluidIds != null && fluidIds.contains(ref)) {
-                NativeImage fluid = renderFluid(client, guiGraphics, ref);
+                NativeImage fluid = renderFluid(client, guiGraphics, ref, packTierPx);
                 if (fluid != null) {
                     return fluid;
                 }
             }
-            NativeImage item = renderItem(client, guiGraphics, ref);
+            NativeImage item = renderItem(client, guiGraphics, ref, packTierPx);
             if (item != null) {
                 return item;
             }
-            return renderMissing(QuestExportConstants.ITEM_FLUID_ATLAS_PX);
+            return MissingIconRenderer.create(packTierPx);
         }
         NativeImage texture = renderTextureIcon(client, guiGraphics, outputDir, ref, packTierPx);
         if (texture != null) {
             return texture;
         }
-        return renderMissing(packTierPx);
+        return MissingIconRenderer.create(packTierPx);
     }
 
-    private static NativeImage renderItem(Minecraft client, GuiGraphics guiGraphics, String registryId)
-            throws IOException {
+    private static NativeImage renderFtbIcon(
+            Minecraft client, GuiGraphics guiGraphics, String ref, int packTierPx) throws IOException {
+        Icon icon = Icon.getIcon(ref);
+        if (icon == null || icon.isEmpty()) {
+            return null;
+        }
+        try (OffScreenRenderer renderer = new OffScreenRenderer(packTierPx, packTierPx)) {
+            renderer.setupFlatGuiRendering();
+            return renderer.captureToNativeImage(() -> icon.draw(guiGraphics, 0, 0, packTierPx, packTierPx));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static NativeImage renderItem(
+            Minecraft client, GuiGraphics guiGraphics, String registryId, int packTierPx) throws IOException {
         ResourceLocation loc = ResourceLocation.tryParse(registryId);
         if (loc == null) {
             return null;
@@ -80,24 +97,27 @@ public final class QuestIconTileRenderer {
             return null;
         }
 
-        int cell = QuestExportConstants.ITEM_FLUID_ATLAS_PX;
         ItemStack stack = new ItemStack(item);
-        try (OffScreenRenderer renderer = new OffScreenRenderer(cell, cell)) {
+        float scale = packTierPx / (float) GUI_ITEM_PX;
+        try (OffScreenRenderer renderer = new OffScreenRenderer(packTierPx, packTierPx)) {
             renderer.setupItemRendering();
-            var sprites = collectSprites(client, stack);
+            Set<TextureAtlasSprite> sprites = collectSprites(client, stack);
             if (renderer.isAnimated(sprites)) {
                 renderer.uploadAnimatedFirstFrame(sprites);
             }
             Runnable draw = () -> {
+                guiGraphics.pose().pushPose();
+                guiGraphics.pose().scale(scale, scale, 1.0F);
                 guiGraphics.renderItem(stack, 0, 0);
                 guiGraphics.renderItemDecorations(client.font, stack, 0, 0, "");
+                guiGraphics.pose().popPose();
             };
             return renderer.captureToNativeImage(draw);
         }
     }
 
-    private static NativeImage renderFluid(Minecraft client, GuiGraphics guiGraphics, String registryId)
-            throws IOException {
+    private static NativeImage renderFluid(
+            Minecraft client, GuiGraphics guiGraphics, String registryId, int packTierPx) throws IOException {
         ResourceLocation loc = ResourceLocation.tryParse(registryId);
         if (loc == null) {
             return null;
@@ -129,20 +149,13 @@ public final class QuestIconTileRenderer {
         float fb = b;
         float fa = a;
 
-        int cell = QuestExportConstants.ITEM_FLUID_ATLAS_PX;
-        try (OffScreenRenderer renderer = new OffScreenRenderer(cell, cell)) {
+        try (OffScreenRenderer renderer = new OffScreenRenderer(packTierPx, packTierPx)) {
             renderer.setupFlatGuiRendering();
             Runnable draw = () -> {
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 RenderSystem.setShaderColor(fr, fg, fb, fa);
-                guiGraphics.blit(
-                        0,
-                        0,
-                        0,
-                        cell,
-                        cell,
-                        sprite);
+                guiGraphics.blit(0, 0, 0, packTierPx, packTierPx, sprite);
                 RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             };
             return renderer.captureToNativeImage(draw);
@@ -155,14 +168,9 @@ public final class QuestIconTileRenderer {
             Path outputDir,
             String ref,
             int tierPx) throws IOException {
-        Icon icon = Icon.getIcon(ref);
-        if (icon != null && !icon.isEmpty()) {
-            try (OffScreenRenderer renderer = new OffScreenRenderer(tierPx, tierPx)) {
-                renderer.setupFlatGuiRendering();
-                return renderer.captureToNativeImage(() -> icon.draw(guiGraphics, 0, 0, tierPx, tierPx));
-            } catch (Exception ignored) {
-                // Fall through to exported asset.
-            }
+        NativeImage icon = renderFtbIcon(client, guiGraphics, ref, tierPx);
+        if (icon != null) {
+            return icon;
         }
         return loadTextureAsset(outputDir, ref, tierPx);
     }
@@ -217,9 +225,10 @@ public final class QuestIconTileRenderer {
     }
 
     private static Set<TextureAtlasSprite> guessSprites(Collection<BakedModel> models) {
-        var result = Collections.newSetFromMap(new IdentityHashMap<TextureAtlasSprite, Boolean>());
-        var random = RandomSource.create(0);
-        for (var model : models) {
+        Set<TextureAtlasSprite> result =
+                Collections.newSetFromMap(new IdentityHashMap<TextureAtlasSprite, Boolean>());
+        RandomSource random = RandomSource.create(0);
+        for (BakedModel model : models) {
             for (var quad : model.getQuads(null, null, random, ModelData.EMPTY, null)) {
                 result.add(quad.getSprite());
             }

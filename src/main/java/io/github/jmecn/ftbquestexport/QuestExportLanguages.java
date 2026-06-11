@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Reads export locale codes from {@code -Dquest.exportLanguages=...}. */
 public final class QuestExportLanguages {
 
     private QuestExportLanguages() {}

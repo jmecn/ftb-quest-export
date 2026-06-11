@@ -89,7 +89,7 @@ public final class LangMergerExporter {
             }
 
             Path out = langRoot.resolve(langFile);
-            String json = QuestExportJson.PRETTY.toJson(merged);
+            String json = QuestExportJson.GSON.toJson(merged);
             Files.writeString(out, json);
             languagesWritten++;
             totalBytes += json.length();

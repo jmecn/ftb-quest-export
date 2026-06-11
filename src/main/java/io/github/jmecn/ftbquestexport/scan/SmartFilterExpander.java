@@ -18,7 +18,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Collects explicit {@code item(...)} and tag refs from {@code ftbfiltersystem:smart_filter} strings. */
 public final class SmartFilterExpander {
 
     private SmartFilterExpander() {}
@@ -32,7 +31,6 @@ public final class SmartFilterExpander {
         return new ArrayList<>(tags);
     }
 
-    /** Collects item and tag refs from a smart-filter expression into the scan result. */
     public static void collectFilterRefs(String filterRaw, QuestScanResult scan) {
         if (filterRaw == null || filterRaw.isBlank() || scan == null) {
             return;

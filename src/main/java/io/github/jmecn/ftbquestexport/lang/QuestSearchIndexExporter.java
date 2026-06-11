@@ -65,7 +65,7 @@ public final class QuestSearchIndexExporter {
             SearchIndexFile payload = SearchIndexFile.of(locale, rows);
 
             Path out = searchRoot.resolve(locale + ".json");
-            Files.writeString(out, QuestExportJson.PRETTY.toJson(payload) + "\n", StandardCharsets.UTF_8);
+            Files.writeString(out, QuestExportJson.GSON.toJson(payload), StandardCharsets.UTF_8);
             writtenLocales.add(locale);
             FtbQuestExportMod.LOGGER.info(
                     "{} {}: {} quests -> {}",

@@ -42,7 +42,7 @@ public final class QuestExportConstants {
     public static final String CHAPTER_IMAGES_REL_ROOT = "assets/chapter-images";
     public static final int CHAPTER_IMAGE_MIN_FRAME_PX = 16;
 
-    /** Atlas cell for registry item / fluid (MC GUI native 16×16; not upscaled). */
+    /** Native MC GUI item/fluid art size (minimum atlas tier). */
     public static final int ITEM_FLUID_ATLAS_PX = 16;
     /** Task/reward row icons in quest detail (QuestBook-React default). */
     public static final int DETAIL_ITEM_ICON_PX = 32;
@@ -53,8 +53,7 @@ public final class QuestExportConstants {
     public static final int GRID_STEP_BASE = 24;
     public static final double INNER_RATIO = 2.0 / 3.0;
     public static final double BUTTON_CELL_RATIO = 1.5 / (1.5 + 0.25);
-    public static final String MISSING_ICON_REGISTRY_ID = "minecraft_web_export:missing_icon";
-    public static final String LOG_PREFIX_CHAPTER_ICON_ATLAS = "[chapter-icon-atlas]";
+    public static final String MISSING_ICON_REGISTRY_ID = "fqe:missing_icon";
     public static final int MISSING_ICON_MAGENTA = 0xFFFF00FF;
     public static final int MISSING_ICON_BLACK = 0xFF000000;
 

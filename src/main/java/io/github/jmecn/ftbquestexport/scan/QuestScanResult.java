@@ -23,6 +23,7 @@ public final class QuestScanResult {
     private final Set<String> blocks = new TreeSet<>();
     private final Set<String> entities = new TreeSet<>();
     private final Set<String> textures = new TreeSet<>();
+    private final Set<String> questShapeIds = new TreeSet<>();
     private final Set<String> langKeys = new TreeSet<>();
     private final Map<String, java.util.List<String>> expandedFilters = new TreeMap<>();
 
@@ -79,6 +80,10 @@ public final class QuestScanResult {
         return textures;
     }
 
+    public Set<String> getQuestShapeIds() {
+        return questShapeIds;
+    }
+
     public Set<String> getLangKeys() {
         return langKeys;
     }
@@ -128,10 +133,7 @@ public final class QuestScanResult {
         if ("none".equals(shapeId)) {
             return;
         }
-        String base = "ftbquests:textures/shapes/" + shapeId + "/";
-        addTexture(base + "shape.png");
-        addTexture(base + "background.png");
-        addTexture(base + "outline.png");
+        questShapeIds.add(shapeId);
     }
 
     private static String normalizeQuestShapeId(String shape) {

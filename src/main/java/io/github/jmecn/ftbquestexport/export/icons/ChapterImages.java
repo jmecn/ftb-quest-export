@@ -136,7 +136,6 @@ public final class ChapterImages {
     public static ChapterImageBakeResult bake(
             ChapterImage chapterImage,
             Path outputFile,
-            Minecraft client,
             GuiGraphics guiGraphics) throws IOException {
         Icon icon = chapterImage.getImage();
         if (icon == null || icon.isEmpty()) {
@@ -166,10 +165,7 @@ public final class ChapterImages {
             frameCount = 1;
             frameW = targetPx;
             frameH = targetPx;
-            strip = renderFallback(icon, mod, frameW, frameH, client, guiGraphics);
-            if (strip == null) {
-                return null;
-            }
+            strip = renderFallback(icon, mod, frameW, frameH, guiGraphics);
         }
 
         Files.createDirectories(outputFile.getParent());
@@ -189,15 +185,6 @@ public final class ChapterImages {
         return Math.max(QuestExportConstants.CHAPTER_IMAGE_MIN_FRAME_PX, (int) Math.ceil(grid * 16D * 2D));
     }
 
-    /** {@code animation.frametime} from texture {@code .mcmeta}; defaults to 1 (vanilla). */
-    public static int readAnimationFrameTime(Icon icon) {
-        return readAnimationMeta(icon, Math.max(1, analyze(icon).frameCount())).frameTime();
-    }
-
-    /**
-     * {@code animation.frametime} and {@code animation.frames} from texture {@code .mcmeta}.
-     * When {@code frames} is absent, sequence is {@code [0..textureFrameCount-1]} (vanilla strip order).
-     */
     public static AnimationMeta readAnimationMeta(Icon icon, int textureFrameCount) {
         int frameTime = 1;
         List<Integer> sequence = new ArrayList<>();
@@ -209,9 +196,6 @@ public final class ChapterImages {
                 texture.getNamespace(),
                 texture.getPath() + ".mcmeta");
         Minecraft client = Minecraft.getInstance();
-        if (client == null) {
-            return defaultAnimationMeta(textureFrameCount);
-        }
         try {
             Resource resource = client.getResourceManager().getResource(metaId).orElse(null);
             if (resource == null) {
@@ -294,14 +278,12 @@ public final class ChapterImages {
             Color4I mod,
             int frameW,
             int frameH,
-            Minecraft client,
             GuiGraphics guiGraphics) throws IOException {
         Icon drawIcon = !mod.equals(Color4I.WHITE) ? icon.withColor(mod) : icon;
         Path temp = Files.createTempFile("chapter-image-bake", ".png");
         try (var renderer = new OffScreenRenderer(frameW, frameH)) {
             renderer.setupFlatGuiRendering();
-            Icon finalDrawIcon = drawIcon;
-            renderer.captureAsPng(() -> finalDrawIcon.draw(guiGraphics, 0, 0, frameW, frameH), temp);
+            renderer.captureAsPng(() -> drawIcon.draw(guiGraphics, 0, 0, frameW, frameH), temp);
             return PixelBuffer.from(ImageIO.read(temp.toFile()));
         } finally {
             Files.deleteIfExists(temp);

@@ -71,7 +71,7 @@ public final class ChapterImageExporter {
                     if (entry == null) {
                         String fileName = hashKey(cacheKey) + ".png";
                         Path out = bakeRoot.resolve(fileName);
-                        var baked = ChapterImages.bake(source, out, client, guiGraphics);
+                        var baked = ChapterImages.bake(source, out, guiGraphics);
                         if (baked == null) {
                             failures++;
                             continue;

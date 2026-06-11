@@ -103,9 +103,6 @@ public final class ChapterImageExporter {
                         }
                     }
                     imgJson.put("baked", entry.relative());
-                    // Vertex color + Web bg are baked into opaque PNG; web draws baked assets only.
-                    imgJson.remove("alpha");
-                    imgJson.remove("color");
                 } catch (Exception ex) {
                     failures++;
                     FtbQuestExportMod.LOGGER.warn(
@@ -127,10 +124,8 @@ public final class ChapterImageExporter {
     }
 
     static String bakeCacheKey(ChapterImage image) {
-        var mod = ChapterImages.vertexColor(image);
-        return image.getImage().toString()
-                + "|rgba=" + mod.rgba()
-                + "|bg=" + Integer.toHexString(QuestExportConstants.CHAPTER_IMAGE_BAKE_BACKGROUND_RGB);
+        var tint = ChapterImages.vertexTint(image);
+        return image.getImage().toString() + "|rgb=" + tint.rgb();
     }
 
     private static String hashKey(String input) {

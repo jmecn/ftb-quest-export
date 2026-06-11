@@ -41,7 +41,6 @@ public final class QuestExportConstants {
 
     public static final String CHAPTER_IMAGES_REL_ROOT = "assets/chapter-images";
     public static final int CHAPTER_IMAGE_MIN_FRAME_PX = 16;
-    public static final int CHAPTER_IMAGE_BAKE_BACKGROUND_RGB = 0x151515;
 
     public static final int ICON_CELL_PX = 32;
     public static final int ICON_FLUSH_RENDER_EVERY = 256;

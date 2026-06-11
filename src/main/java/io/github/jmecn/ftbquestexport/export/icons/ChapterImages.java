@@ -141,7 +141,7 @@ public final class ChapterImages {
             return null;
         }
 
-        Color4I mod = vertexColor(chapterImage);
+        Color4I tint = vertexTint(chapterImage);
         int targetPx = targetFramePixels(chapterImage);
 
         List<PixelBuffer> frames = extractFrames(icon);
@@ -157,16 +157,14 @@ public final class ChapterImages {
             strip = new PixelBuffer(frameW, frameH * frameCount);
             for (int i = 0; i < frameCount; i++) {
                 PixelBuffer scaled = scaleFrame(frames.get(i), frameW, frameH);
-                modulate(scaled, mod);
-                flattenToOpaqueBackground(scaled, QuestExportConstants.CHAPTER_IMAGE_BAKE_BACKGROUND_RGB);
+                bakeRgbTint(scaled, tint);
                 strip.setRGB(0, i * frameH, scaled);
             }
         } else {
             frameCount = 1;
             frameW = targetPx;
             frameH = targetPx;
-            strip = renderFallback(icon, mod, frameW, frameH, guiGraphics);
-            flattenToOpaqueBackground(strip, QuestExportConstants.CHAPTER_IMAGE_BAKE_BACKGROUND_RGB);
+            strip = renderFallback(icon, tint, frameW, frameH, guiGraphics);
         }
 
         Files.createDirectories(outputFile.getParent());
@@ -174,9 +172,9 @@ public final class ChapterImages {
         return new ChapterImageBakeResult(outputFile, frameCount, frameW, frameH, Files.size(outputFile));
     }
 
-    public static Color4I vertexColor(ChapterImage chapterImage) {
-        if (!chapterImage.getColor().equals(Color4I.WHITE) || chapterImage.getAlpha() < 255) {
-            return chapterImage.getColor().withAlpha(chapterImage.getAlpha());
+    public static Color4I vertexTint(ChapterImage chapterImage) {
+        if (!chapterImage.getColor().equals(Color4I.WHITE)) {
+            return chapterImage.getColor();
         }
         return Color4I.WHITE;
     }
@@ -276,16 +274,17 @@ public final class ChapterImages {
 
     private static PixelBuffer renderFallback(
             Icon icon,
-            Color4I mod,
+            Color4I tint,
             int frameW,
             int frameH,
             GuiGraphics guiGraphics) throws IOException {
-        Icon drawIcon = !mod.equals(Color4I.WHITE) ? icon.withColor(mod) : icon;
         Path temp = Files.createTempFile("chapter-image-bake", ".png");
         try (var renderer = new OffScreenRenderer(frameW, frameH)) {
             renderer.setupFlatGuiRendering();
-            renderer.captureAsPng(() -> drawIcon.draw(guiGraphics, 0, 0, frameW, frameH), temp);
-            return PixelBuffer.from(ImageIO.read(temp.toFile()));
+            renderer.captureAsPng(() -> icon.draw(guiGraphics, 0, 0, frameW, frameH), temp);
+            PixelBuffer buffer = PixelBuffer.from(ImageIO.read(temp.toFile()));
+            bakeRgbTint(buffer, tint);
+            return buffer;
         } finally {
             Files.deleteIfExists(temp);
         }
@@ -304,52 +303,21 @@ public final class ChapterImages {
         return PixelBuffer.from(scaled);
     }
 
-    private static void modulate(PixelBuffer buffer, Color4I mod) {
-        if (mod.equals(Color4I.WHITE)) {
-            return;
-        }
-        int modR = mod.redi();
-        int modG = mod.greeni();
-        int modB = mod.bluei();
-        int modA = mod.alphai();
-        int[] pixels = buffer.getPixels();
-        for (int i = 0; i < pixels.length; i++) {
-            pixels[i] = modulatePixel(pixels[i], modR, modG, modB, modA);
-        }
-        buffer.setPixels(pixels);
-    }
-
-    private static int modulatePixel(int argb, int modR, int modG, int modB, int modA) {
-        int a = (argb >>> 24) & 0xFF;
-        int r = (argb >>> 16) & 0xFF;
-        int g = (argb >>> 8) & 0xFF;
-        int b = argb & 0xFF;
-        int outA = a * modA / 255;
-        int outR = r * modR / 255;
-        int outG = g * modG / 255;
-        int outB = b * modB / 255;
-        return (outA << 24) | (outR << 16) | (outG << 8) | outB;
-    }
-
-    static void flattenToOpaqueBackground(PixelBuffer buffer, int bgRgb) {
-        int bgR = (bgRgb >> 16) & 0xFF;
-        int bgG = (bgRgb >> 8) & 0xFF;
-        int bgB = bgRgb & 0xFF;
+    static void bakeRgbTint(PixelBuffer buffer, Color4I tint) {
+        int tintR = tint.redi();
+        int tintG = tint.greeni();
+        int tintB = tint.bluei();
         int[] pixels = buffer.getPixels();
         for (int i = 0; i < pixels.length; i++) {
             int argb = pixels[i];
             int a = (argb >>> 24) & 0xFF;
-            if (a >= 255) {
-                pixels[i] = 0xFF000000 | (argb & 0xFFFFFF);
-                continue;
-            }
             int r = (argb >>> 16) & 0xFF;
             int g = (argb >>> 8) & 0xFF;
             int b = argb & 0xFF;
-            int outR = (r * a + bgR * (255 - a)) / 255;
-            int outG = (g * a + bgG * (255 - a)) / 255;
-            int outB = (b * a + bgB * (255 - a)) / 255;
-            pixels[i] = 0xFF000000 | (outR << 16) | (outG << 8) | outB;
+            int outR = r * tintR / 255;
+            int outG = g * tintG / 255;
+            int outB = b * tintB / 255;
+            pixels[i] = (a << 24) | (outR << 16) | (outG << 8) | outB;
         }
         buffer.setPixels(pixels);
     }

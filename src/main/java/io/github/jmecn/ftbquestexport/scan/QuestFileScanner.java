@@ -87,7 +87,8 @@ public final class QuestFileScanner {
                     chapter.getIndex(),
                     QuestDisplayExport.resolveIconRef(chapter.getIcon(), scan),
                     chapterTitle != null && !chapterTitle.isBlank() ? chapterTitle : null,
-                    rawSubtitle.isEmpty() ? null : rawSubtitle));
+                    rawSubtitle.isEmpty() ? null : rawSubtitle,
+                    null));
         }
 
         QuestIndex index = new QuestIndex(

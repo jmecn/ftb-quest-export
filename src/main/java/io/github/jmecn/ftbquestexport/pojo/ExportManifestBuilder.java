@@ -13,8 +13,8 @@ public final class ExportManifestBuilder {
     private String chapterImageExportError;
     private ChapterIconAtlasExportResult chapterIconAtlases;
     private String chapterIconAtlasExportError;
-    private ShapeAtlasExportResult shapeAtlas;
-    private String shapeAtlasExportError;
+    private GlobalAtlasExportResult globalAtlas;
+    private String globalAtlasExportError;
     private FluidExportResult fluids;
     private ItemsIndexExportResult itemsIndex;
     private LangExportResult lang;
@@ -69,13 +69,13 @@ public final class ExportManifestBuilder {
         return this;
     }
 
-    public ExportManifestBuilder shapeAtlas(ShapeAtlasExportResult value) {
-        this.shapeAtlas = value;
+    public ExportManifestBuilder globalAtlas(GlobalAtlasExportResult value) {
+        this.globalAtlas = value;
         return this;
     }
 
-    public ExportManifestBuilder shapeAtlasExportError(String value) {
-        this.shapeAtlasExportError = value;
+    public ExportManifestBuilder globalAtlasExportError(String value) {
+        this.globalAtlasExportError = value;
         return this;
     }
 
@@ -130,8 +130,8 @@ public final class ExportManifestBuilder {
                 chapterImageExportError,
                 chapterIconAtlases,
                 chapterIconAtlasExportError,
-                shapeAtlas,
-                shapeAtlasExportError,
+                globalAtlas,
+                globalAtlasExportError,
                 fluids,
                 itemsIndex,
                 lang,

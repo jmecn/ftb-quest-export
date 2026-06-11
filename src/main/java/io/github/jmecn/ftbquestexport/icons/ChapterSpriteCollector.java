@@ -36,10 +36,6 @@ public final class ChapterSpriteCollector {
         Map<String, SpriteNeed> needs = new LinkedHashMap<>();
         Map<String, Integer> nativeCache = new HashMap<>();
 
-        if (chapterData.icon() != null && !chapterData.icon().isBlank()) {
-            upsert(needs, chapterData.icon(), 1.0, gridScale, fluidIds, client, nativeCache);
-        }
-
         if (chapterData.quests() != null) {
             for (QuestNode quest : chapterData.quests()) {
                 collectQuestNodeSprites(quest, needs, gridScale, fluidIds, client, nativeCache, true);

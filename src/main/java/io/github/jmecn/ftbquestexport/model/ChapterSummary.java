@@ -9,5 +9,6 @@ public record ChapterSummary(
         int orderIndex,
         String icon,
         String title,
-        List<String> subtitle) {
+        List<String> subtitle,
+        IconDisplay iconDisplay) {
 }

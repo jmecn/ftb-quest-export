@@ -81,7 +81,7 @@ public final class QuestAssetExporter {
         if (textureRef == null || textureRef.isBlank()) {
             return;
         }
-        if (FtbQuestShapeAtlasExporter.isQuestShapeTextureRef(textureRef)) {
+        if (GlobalAtlasExporter.isQuestShapeTextureRef(textureRef)) {
             return;
         }
         String ref = textureRef;

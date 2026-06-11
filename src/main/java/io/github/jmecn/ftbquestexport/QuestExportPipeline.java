@@ -3,7 +3,7 @@ package io.github.jmecn.ftbquestexport;
 import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import io.github.jmecn.ftbquestexport.assets.ChapterIconAtlasExporter;
 import io.github.jmecn.ftbquestexport.assets.ChapterImageExporter;
-import io.github.jmecn.ftbquestexport.assets.FtbQuestShapeAtlasExporter;
+import io.github.jmecn.ftbquestexport.assets.GlobalAtlasExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestAssetExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestFluidExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestItemNameKeysExporter;
@@ -28,7 +28,7 @@ import io.github.jmecn.ftbquestexport.pojo.LangExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ManifestExportSize;
 import io.github.jmecn.ftbquestexport.pojo.QuestSearchIndexExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ScanBundle;
-import io.github.jmecn.ftbquestexport.pojo.ShapeAtlasExportResult;
+import io.github.jmecn.ftbquestexport.pojo.GlobalAtlasExportResult;
 import io.github.jmecn.ftbquestexport.model.QuestIndex;
 import io.github.jmecn.ftbquestexport.model.SearchIndexManifestSection;
 import io.github.jmecn.ftbquestexport.scan.QuestFileScanner;
@@ -101,15 +101,17 @@ public final class QuestExportPipeline {
 
         if (bundle != null && scan != null) {
             try {
-                ShapeAtlasExportResult shapeAtlas = FtbQuestShapeAtlasExporter.export(outputDir, client, scan);
-                manifest.shapeAtlas(shapeAtlas);
-                if (shapeAtlas.shapeAtlas() != null) {
-                    QuestIndex indexWithShapes = bundle.index().withShapeAtlas(shapeAtlas.shapeAtlas());
-                    writeIndex(outputDir, indexWithShapes);
+                GlobalAtlasExportResult globalAtlas = GlobalAtlasExporter.export(
+                        outputDir, client, scan, bundle.index(), scan.getFluids());
+                manifest.globalAtlas(globalAtlas);
+                if (globalAtlas.globalAtlas() != null) {
+                    QuestIndex indexWithGlobal = bundle.index().withGlobalAtlas(
+                            globalAtlas.globalAtlas(), globalAtlas.chapters());
+                    writeIndex(outputDir, indexWithGlobal);
                 }
             } catch (Throwable t) {
-                FtbQuestExportMod.LOGGER.error("shape atlas export failed", t);
-                manifest.shapeAtlasExportError(t.getClass().getSimpleName() + ": " + t.getMessage());
+                FtbQuestExportMod.LOGGER.error("global atlas export failed", t);
+                manifest.globalAtlasExportError(t.getClass().getSimpleName() + ": " + t.getMessage());
             }
         }
 

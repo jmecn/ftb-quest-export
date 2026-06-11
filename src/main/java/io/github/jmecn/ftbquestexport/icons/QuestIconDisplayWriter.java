@@ -82,6 +82,13 @@ public final class QuestIconDisplayWriter {
         return link.withIconDisplay(buildIconDisplay(outer, inner, refs, fluidIds, client));
     }
 
+    /** Sidebar / home chapter tile; sprite lives in {@code index.json#globalAtlas}. */
+    public static IconDisplay buildChapterSummaryIconDisplay(String spriteId) {
+        int outer = QuestExportConstants.DETAIL_ITEM_ICON_PX;
+        int inner = QuestIconSizing.questIconInnerPx(outer);
+        return new IconDisplay(spriteId, outer, inner, null);
+    }
+
     public static IconDisplay buildIconDisplay(
             int outer, int inner, List<String> refs, Set<String> fluidIds, Minecraft client) {
         Map<String, Integer> nativeCache = new HashMap<>();

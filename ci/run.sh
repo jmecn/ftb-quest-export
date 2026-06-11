@@ -299,6 +299,108 @@ prepare_game() {
   setup_hmc
 }
 
+# Chapter quest icon atlases + global UI atlas (replaces legacy assets/icons/items/).
+verify_quest_icon_atlases() {
+  local quest="${1:?quest-export root required}"
+
+  if [[ -f "$quest/assets/icons/items/manifest.json" ]] \
+      || find "$quest/assets/icons/items" -name '*.png' 2>/dev/null | grep -q .; then
+    echo "::error::Legacy per-item icons under $quest/assets/icons/items — re-export with current ftb-quest-export" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$quest/quests/global-atlas.png" ]]; then
+    echo "::error::Missing $quest/quests/global-atlas.png" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$quest/quests/index.json" ]]; then
+    echo "::error::Missing $quest/quests/index.json" >&2
+    return 1
+  fi
+
+  local chapter_atlas_count
+  chapter_atlas_count="$(find "$quest/quests/chapters" -maxdepth 1 -name '*.png' 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "$chapter_atlas_count" -lt 1 ]]; then
+    echo "::error::No chapter icon atlases under $quest/quests/chapters/*.png" >&2
+    return 1
+  fi
+
+  python3 - "$quest" "$chapter_atlas_count" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+quest = Path(sys.argv[1])
+chapter_atlas_count = int(sys.argv[2])
+
+index = json.loads((quest / "quests/index.json").read_text(encoding="utf-8"))
+global_atlas = index.get("globalAtlas")
+if not global_atlas:
+    raise SystemExit("::error::quests/index.json missing globalAtlas")
+
+for key in ("src", "width", "height", "missingIconId", "sprites"):
+    if key not in global_atlas:
+        raise SystemExit(f"::error::globalAtlas missing {key}")
+
+missing_id = global_atlas["missingIconId"]
+if missing_id != "fqe:missing_icon":
+    raise SystemExit(f"::error::globalAtlas.missingIconId must be fqe:missing_icon (got: {missing_id})")
+
+sprites = global_atlas["sprites"]
+if missing_id not in sprites:
+    raise SystemExit(f"::error::globalAtlas.sprites missing {missing_id}")
+
+rect = sprites[missing_id]
+if rect.get("w") != 16 or rect.get("h") != 16:
+    raise SystemExit(f"::error::{missing_id} must be 16x16 in global atlas index")
+
+atlas_png = quest / global_atlas["src"]
+if not atlas_png.is_file():
+    raise SystemExit(f"::error::global atlas file missing: {atlas_png}")
+
+chapters = index.get("chapters") or []
+if not chapters:
+    raise SystemExit("::error::index.json has no chapters")
+
+with_icon = [c for c in chapters if c.get("icon") and (c.get("iconDisplay") or {}).get("spriteId")]
+if not with_icon:
+    raise SystemExit("::error::index chapters missing iconDisplay for sidebar icons")
+
+sample_filename = with_icon[0]["filename"]
+expected_sprite = f"chapter:{sample_filename}"
+if with_icon[0]["iconDisplay"]["spriteId"] != expected_sprite:
+    raise SystemExit(
+        f"::error::chapter iconDisplay.spriteId must be chapter:{{filename}} (got: {with_icon[0]['iconDisplay']['spriteId']})"
+    )
+if expected_sprite not in sprites:
+    raise SystemExit(f"::error::globalAtlas.sprites missing {expected_sprite}")
+
+chapters_dir = quest / "quests/chapters"
+chapter_jsons = sorted(chapters_dir.glob("*.json"))
+if not chapter_jsons:
+    raise SystemExit(f"::error::No chapter JSON under {chapters_dir}")
+
+sample = json.loads(chapter_jsons[0].read_text(encoding="utf-8"))
+for key in ("iconAtlases", "iconSprites"):
+    if key not in sample:
+        raise SystemExit(f"::error::{chapter_jsons[0].name} missing {key}")
+
+quests = sample.get("quests") or []
+if quests and not (quests[0].get("iconDisplay") or {}).get("spriteId"):
+    raise SystemExit(f"::error::{chapter_jsons[0].name} quests[0] missing iconDisplay.spriteId")
+
+manifest = json.loads((quest / "manifest.json").read_text(encoding="utf-8"))
+cia = manifest.get("chapterIconAtlases") or {}
+sprites_packed = int(cia.get("spritesPacked") or 0)
+
+print(
+    f"quest icons: global-atlas ({len(sprites)} sprites, {len(with_icon)} chapter icons) + "
+    f"{chapter_atlas_count} chapter quest atlas PNG(s), {sprites_packed} quest sprites packed"
+)
+PY
+}
+
 verify_quest_export() {
   local quest="${EXPORT_QUEST:?EXPORT_QUEST required}"
 
@@ -323,13 +425,10 @@ verify_quest_export() {
     fi
   done
 
-  if [[ ! -d "$quest/assets/icons" ]]; then
-    echo "::error::Missing $quest/assets/icons"
-    exit 1
-  fi
+  verify_quest_icon_atlases "$quest"
 
   echo "quest-export OK: $quest"
-  du -sh "$quest" "$quest/assets" "$quest/lang" "$quest/quests" "$quest/assets/icons" 2>/dev/null || true
+  du -sh "$quest" "$quest/assets" "$quest/lang" "$quest/quests" "$quest/quests/chapters" 2>/dev/null || true
 }
 
 launch_export() {

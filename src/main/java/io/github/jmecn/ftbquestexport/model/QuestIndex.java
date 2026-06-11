@@ -10,9 +10,9 @@ public record QuestIndex(
         String defaultQuestShape,
         List<ChapterGroup> chapterGroups,
         List<ChapterSummary> chapters,
-        ShapeAtlas shapeAtlas) {
+        GlobalAtlas globalAtlas) {
 
-    public QuestIndex withShapeAtlas(ShapeAtlas shapeAtlas) {
+    public QuestIndex withGlobalAtlas(GlobalAtlas globalAtlas, List<ChapterSummary> chapters) {
         return new QuestIndex(
                 title,
                 version,
@@ -21,6 +21,6 @@ public record QuestIndex(
                 defaultQuestShape,
                 chapterGroups,
                 chapters,
-                shapeAtlas);
+                globalAtlas);
     }
 }

@@ -120,13 +120,13 @@ public final class QuestScanResult {
         }
     }
 
-    /** FTB {@code QuestShape} PNG layers for web quest nodes ({@code background} + {@code outline}). */
     public void addQuestShapeTextures(String shape) {
         String shapeId = normalizeQuestShapeId(shape);
-        if (shapeId == null || "none".equals(shapeId)) {
+        if ("none".equals(shapeId)) {
             return;
         }
         String base = "ftbquests:textures/shapes/" + shapeId + "/";
+        addTexture(base + "shape.png");
         addTexture(base + "background.png");
         addTexture(base + "outline.png");
     }

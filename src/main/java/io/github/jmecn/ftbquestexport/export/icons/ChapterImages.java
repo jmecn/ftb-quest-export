@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Frame layout, extraction, and PNG baking for FTB chapter decoration icons. */
 public final class ChapterImages {
 
     public record AnimationMeta(int frameTime, List<Integer> frameSequence) {}
@@ -159,6 +158,7 @@ public final class ChapterImages {
             for (int i = 0; i < frameCount; i++) {
                 PixelBuffer scaled = scaleFrame(frames.get(i), frameW, frameH);
                 modulate(scaled, mod);
+                flattenToOpaqueBackground(scaled, QuestExportConstants.CHAPTER_IMAGE_BAKE_BACKGROUND_RGB);
                 strip.setRGB(0, i * frameH, scaled);
             }
         } else {
@@ -166,6 +166,7 @@ public final class ChapterImages {
             frameW = targetPx;
             frameH = targetPx;
             strip = renderFallback(icon, mod, frameW, frameH, guiGraphics);
+            flattenToOpaqueBackground(strip, QuestExportConstants.CHAPTER_IMAGE_BAKE_BACKGROUND_RGB);
         }
 
         Files.createDirectories(outputFile.getParent());
@@ -328,6 +329,29 @@ public final class ChapterImages {
         int outG = g * modG / 255;
         int outB = b * modB / 255;
         return (outA << 24) | (outR << 16) | (outG << 8) | outB;
+    }
+
+    static void flattenToOpaqueBackground(PixelBuffer buffer, int bgRgb) {
+        int bgR = (bgRgb >> 16) & 0xFF;
+        int bgG = (bgRgb >> 8) & 0xFF;
+        int bgB = bgRgb & 0xFF;
+        int[] pixels = buffer.getPixels();
+        for (int i = 0; i < pixels.length; i++) {
+            int argb = pixels[i];
+            int a = (argb >>> 24) & 0xFF;
+            if (a >= 255) {
+                pixels[i] = 0xFF000000 | (argb & 0xFFFFFF);
+                continue;
+            }
+            int r = (argb >>> 16) & 0xFF;
+            int g = (argb >>> 8) & 0xFF;
+            int b = argb & 0xFF;
+            int outR = (r * a + bgR * (255 - a)) / 255;
+            int outG = (g * a + bgG * (255 - a)) / 255;
+            int outB = (b * a + bgB * (255 - a)) / 255;
+            pixels[i] = 0xFF000000 | (outR << 16) | (outG << 8) | outB;
+        }
+        buffer.setPixels(pixels);
     }
 
     private static PixelBuffer pixelBufferForIcon(Icon icon) {

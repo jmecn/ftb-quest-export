@@ -105,6 +105,7 @@ public final class ChapterSpriteCollector {
         for (String ref : refs) {
             upsert(needs, ref, inner, outer, fluidIds, client, nativeCache);
         }
+        collectTaskRewardItems(linkedQuest, needs, fluidIds, client, nativeCache);
     }
 
     private static void collectTaskRewardItems(

@@ -54,6 +54,7 @@ public final class QuestExportConstants {
     public static final double INNER_RATIO = 2.0 / 3.0;
     public static final double BUTTON_CELL_RATIO = 1.5 / (1.5 + 0.25);
     public static final String MISSING_ICON_REGISTRY_ID = "fqe:missing_icon";
+    public static final String SMART_FILTER_ITEM_ID = "ftbfiltersystem:smart_filter";
     public static final int MISSING_ICON_MAGENTA = 0xFFFF00FF;
     public static final int MISSING_ICON_BLACK = 0xFF000000;
 

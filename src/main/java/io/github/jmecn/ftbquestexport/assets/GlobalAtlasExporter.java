@@ -85,7 +85,7 @@ public final class GlobalAtlasExporter {
         Map<Integer, OffScreenRenderer> renderersByTier = new HashMap<>();
         Map<String, Integer> nativeCache = new HashMap<>();
         int sidebarOuter = QuestExportConstants.DETAIL_ITEM_ICON_PX;
-        int sidebarInner = QuestIconSizing.questIconInnerPx(sidebarOuter);
+        int sidebarInner = sidebarOuter;
 
         try {
             for (ChapterSummary summary : index.chapters()) {

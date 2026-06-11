@@ -65,7 +65,7 @@ public final class ChapterSpriteCollector {
             }
         }
         if (includeTasksRewards) {
-            collectTaskRewardItems(quest, needs, gridScale, fluidIds, client, nativeCache);
+            collectTaskRewardItems(quest, needs, fluidIds, client, nativeCache);
         }
     }
 
@@ -84,7 +84,7 @@ public final class ChapterSpriteCollector {
         if (linkedQuest == null) {
             return;
         }
-        double linkSize = link.size() != null ? link.size() : linkedQuest.size() != null ? linkedQuest.size() : 1.0;
+        double linkSize = link.size() != null ? link.size() : 1.0;
         int outer = QuestIconSizing.questIconPx(linkSize, gridScale);
         int inner = QuestIconSizing.questIconInnerPx(outer);
         List<String> refs = new ArrayList<>();
@@ -110,14 +110,13 @@ public final class ChapterSpriteCollector {
     private static void collectTaskRewardItems(
             QuestNode quest,
             Map<String, SpriteNeed> needs,
-            double gridScale,
             Set<String> fluidIds,
             Minecraft client,
             Map<String, Integer> nativeCache) {
-        collectTaskRewardItemList(quest.tasks(), needs, gridScale, fluidIds, client, nativeCache);
+        collectTaskRewardItemList(quest.tasks(), needs, fluidIds, client, nativeCache);
         if (quest.rewards() != null) {
             for (QuestReward reward : quest.rewards()) {
-                collectItemRefs(reward.items(), needs, gridScale, fluidIds, client, nativeCache);
+                collectItemRefs(reward.items(), needs, fluidIds, client, nativeCache);
             }
         }
     }
@@ -125,7 +124,6 @@ public final class ChapterSpriteCollector {
     private static void collectTaskRewardItemList(
             List<QuestTask> tasks,
             Map<String, SpriteNeed> needs,
-            double gridScale,
             Set<String> fluidIds,
             Minecraft client,
             Map<String, Integer> nativeCache) {
@@ -133,23 +131,29 @@ public final class ChapterSpriteCollector {
             return;
         }
         for (QuestTask task : tasks) {
-            collectItemRefs(task.items(), needs, gridScale, fluidIds, client, nativeCache);
+            collectItemRefs(task.items(), needs, fluidIds, client, nativeCache);
+            if (task.fluid() != null && !task.fluid().isBlank()) {
+                collectItemRefs(List.of(task.fluid()), needs, fluidIds, client, nativeCache);
+            }
         }
     }
 
     private static void collectItemRefs(
             List<String> items,
             Map<String, SpriteNeed> needs,
-            double gridScale,
             Set<String> fluidIds,
             Minecraft client,
             Map<String, Integer> nativeCache) {
         if (items == null) {
             return;
         }
+        int outer = QuestExportConstants.DETAIL_ITEM_ICON_PX;
+        int inner = outer;
         for (String ref : items) {
-            if (ref != null && !ref.isBlank()) {
-                upsert(needs, ref, 1.0, gridScale, fluidIds, client, nativeCache);
+            if (ref != null
+                    && !ref.isBlank()
+                    && !QuestExportConstants.SMART_FILTER_ITEM_ID.equals(ref)) {
+                upsert(needs, ref, inner, outer, fluidIds, client, nativeCache);
             }
         }
     }

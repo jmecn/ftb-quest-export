@@ -33,12 +33,16 @@ public final class QuestIconDisplayWriter {
     public static QuestNode attachTaskRewardIconDisplays(
             QuestNode quest, Set<String> fluidIds, Minecraft client) {
         int outer = QuestExportConstants.DETAIL_ITEM_ICON_PX;
-        int inner = QuestIconSizing.questIconInnerPx(outer);
+        int inner = outer;
         List<QuestTask> tasks = quest.tasks();
         if (tasks != null) {
             List<QuestTask> updatedTasks = new ArrayList<>(tasks.size());
             for (QuestTask task : tasks) {
-                updatedTasks.add(withItemListIconDisplay(task, task.items(), outer, inner, fluidIds, client));
+                List<String> refs = collectItemRefs(task.items());
+                if (refs.isEmpty() && task.fluid() != null && !task.fluid().isBlank()) {
+                    refs = List.of(task.fluid());
+                }
+                updatedTasks.add(withItemListIconDisplay(task, refs, outer, inner, fluidIds, client));
             }
             quest = quest.withTasks(updatedTasks);
         }
@@ -59,7 +63,7 @@ public final class QuestIconDisplayWriter {
             double gridScale,
             Set<String> fluidIds,
             Minecraft client) {
-        double linkSize = link.size() != null ? link.size() : linkedQuest.size() != null ? linkedQuest.size() : 1.0;
+        double linkSize = link.size() != null ? link.size() : 1.0;
         int outer = QuestIconSizing.questIconPx(linkSize, gridScale);
         int inner = QuestIconSizing.questIconInnerPx(outer);
         List<String> refs = new ArrayList<>();
@@ -84,9 +88,8 @@ public final class QuestIconDisplayWriter {
 
     /** Sidebar / home chapter tile; sprite lives in {@code index.json#globalAtlas}. */
     public static IconDisplay buildChapterSummaryIconDisplay(String spriteId) {
-        int outer = QuestExportConstants.DETAIL_ITEM_ICON_PX;
-        int inner = QuestIconSizing.questIconInnerPx(outer);
-        return new IconDisplay(spriteId, outer, inner, null);
+        int px = QuestExportConstants.DETAIL_ITEM_ICON_PX;
+        return new IconDisplay(spriteId, px, px, null);
     }
 
     public static IconDisplay buildIconDisplay(
@@ -137,7 +140,9 @@ public final class QuestIconDisplayWriter {
         }
         List<String> refs = new ArrayList<>();
         for (String item : items) {
-            if (item != null && !item.isBlank()) {
+            if (item != null
+                    && !item.isBlank()
+                    && !QuestExportConstants.SMART_FILTER_ITEM_ID.equals(item)) {
                 refs.add(item);
             }
         }

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+
 set -euo pipefail
 
 CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -86,7 +86,7 @@ load_config() {
   fi
 
   set -a
-  # shellcheck disable=SC1090
+  
   source "$env_file"
   set +a
 
@@ -299,7 +299,6 @@ prepare_game() {
   setup_hmc
 }
 
-# Chapter quest icon atlases + global UI atlas (replaces legacy assets/icons/items/).
 verify_quest_icon_atlases() {
   local quest="${1:?quest-export root required}"
 

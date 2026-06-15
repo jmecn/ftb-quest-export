@@ -45,7 +45,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/** Main quest-export pipeline. */
 public final class QuestExportPipeline {
 
     private QuestExportPipeline() {}
@@ -202,7 +201,6 @@ public final class QuestExportPipeline {
         writeManifest(outputDir, manifest.build());
         return Component.literal("[ftb-quest-export] → " + outputDir.toAbsolutePath());
     }
-
 
     public static void write(Path outputDir, QuestIndex index, Map<String, ChapterData> chapters)
             throws IOException {

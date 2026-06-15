@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/** Resolves FTB Quests rich text to plain strings for search indexing. */
 public final class QuestPlainText {
 
     private static final Pattern COLLAPSE_WS = Pattern.compile("\\s+");

@@ -2,7 +2,6 @@ package io.github.jmecn.ftbquestexport.icons;
 
 import io.github.jmecn.ftbquestexport.QuestExportConstants;
 
-/** Quest node icon pixel sizing (aligned with QuestBook-React / Python mock). */
 public final class QuestIconSizing {
 
     private QuestIconSizing() {}

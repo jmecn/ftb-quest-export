@@ -7,7 +7,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.LoadingOverlay;
 import net.minecraftforge.common.MinecraftForge;
 
-/** Registers the CI export tick handler ({@code quest.export.runAndExit}). */
 public final class QuestExportCiDriver {
 
     private QuestExportCiDriver() {}

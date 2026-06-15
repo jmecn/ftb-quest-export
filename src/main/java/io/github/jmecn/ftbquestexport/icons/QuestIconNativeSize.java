@@ -25,7 +25,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Set;
 
-/** Source pixel size from the loaded resource pack / atlas (no display-driven upscaling). */
 public final class QuestIconNativeSize {
 
     private QuestIconNativeSize() {}

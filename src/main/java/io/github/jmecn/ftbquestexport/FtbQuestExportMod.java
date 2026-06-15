@@ -5,7 +5,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Forge entrypoint for FTB Quests export ({@code /ftbquestexport run}, CI {@code quest.export.runAndExit}). */
 @Mod(FtbQuestExportMod.MOD_ID)
 public final class FtbQuestExportMod {
 

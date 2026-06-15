@@ -34,10 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Packs chapter quest icons into {@code quests/chapters/{filename}.png} and writes
- * {@code iconAtlases} / {@code iconSprites} / {@code iconDisplay} into chapter JSON.
- */
 public final class ChapterIconAtlasExporter {
 
     private ChapterIconAtlasExporter() {}

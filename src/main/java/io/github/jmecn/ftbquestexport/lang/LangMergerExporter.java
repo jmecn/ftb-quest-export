@@ -28,11 +28,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 
-/**
- * Merges mod language files the same way {@link net.minecraft.client.resources.language.ClientLanguage}
- * does at runtime: {@link ResourceManager#listResourceStacks} per {@code assets/<ns>/lang/<locale>.json},
- * lower-priority packs first, later packs override individual keys (KubeJS partial overrides included).
- */
 public final class LangMergerExporter {
 
     private LangMergerExporter() {}

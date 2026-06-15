@@ -10,7 +10,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.nio.file.Path;
 
-/** Client tick state machine for headless CI export. */
 final class QuestExportTickHandler {
 
     private CiExportPhase phase = CiExportPhase.ARMED;

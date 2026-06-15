@@ -38,10 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Packs global UI sprites into {@code quests/global-atlas.png}:
- * FTB node shape layers, sidebar chapter icons, and a 16×16 missing-icon row at the bottom.
- */
 public final class GlobalAtlasExporter {
 
     public static final String GLOBAL_ATLAS_REL = "quests/global-atlas.png";

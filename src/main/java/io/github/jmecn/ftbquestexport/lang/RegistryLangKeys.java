@@ -16,13 +16,11 @@ import net.minecraft.world.level.material.Fluids;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Minecraft lang keys for registry ids (aligned with emi-recipe-renderer lookup order). */
 public final class RegistryLangKeys {
 
     private RegistryLangKeys() {
     }
 
-    /** Mod namespace from a registry id, e.g. {@code gtceu:ingot} → {@code gtceu}. */
     public static String namespace(String registryId) {
         String bare = normalizeRegistryId(registryId);
         int colon = bare.indexOf(':');
@@ -68,7 +66,6 @@ public final class RegistryLangKeys {
         return dotted.isEmpty() ? "" : "fluid." + dotted;
     }
 
-    /** Keys tried by the web renderer for items (item first, then block/fluid fallbacks). */
     public static List<String> itemLookupKeys(String registryId) {
         String dotted = dottedRegistryId(registryId);
         if (dotted.isEmpty()) {
@@ -93,10 +90,6 @@ public final class RegistryLangKeys {
         return keys;
     }
 
-    /**
-     * Authoritative translation key for an item ({@link Item#getDescriptionId()} / {@link ItemStack#getDescriptionId()}).
-     * Matches in-game display for mods that remap keys away from registry paths (e.g. TFC/AFC hanging signs).
-     */
     public static String resolveItemDescriptionKey(Minecraft client, String registryId) {
         ResourceLocation id = ResourceLocation.tryParse(normalizeRegistryId(registryId));
         if (id == null || client == null || client.level == null) {
@@ -113,9 +106,6 @@ public final class RegistryLangKeys {
         return descriptionId == null || descriptionId.isBlank() ? itemKey(registryId) : descriptionId;
     }
 
-    /**
-     * Authoritative translation key for a fluid (legacy block description when present).
-     */
     public static String resolveFluidDescriptionKey(Minecraft client, String registryId) {
         ResourceLocation id = ResourceLocation.tryParse(normalizeRegistryId(registryId));
         if (id == null || client == null || client.level == null) {

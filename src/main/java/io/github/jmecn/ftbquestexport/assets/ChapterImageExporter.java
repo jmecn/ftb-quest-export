@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Bakes chapter decoration images and writes {@code baked} paths into chapter JSON. */
 public final class ChapterImageExporter {
 
     private ChapterImageExporter() {}

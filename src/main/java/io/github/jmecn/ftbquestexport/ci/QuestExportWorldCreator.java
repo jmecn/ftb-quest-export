@@ -20,9 +20,7 @@ import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
-/** Creates or reopens the void world used by {@link QuestExportCiDriver}. */
 public final class QuestExportWorldCreator {
-
 
     private QuestExportWorldCreator() {}
 

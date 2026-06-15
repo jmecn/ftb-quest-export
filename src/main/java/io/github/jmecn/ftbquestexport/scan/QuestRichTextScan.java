@@ -39,7 +39,6 @@ public final class QuestRichTextScan {
         }
     }
 
-    /** Scan resolved lang strings for embedded rich text before copying textures. */
     public static void enrichTexturesFromLang(Minecraft client, QuestScanResult scan) {
         Set<String> wanted = scan.getLangKeys();
         if (wanted.isEmpty()) {
@@ -157,7 +156,7 @@ public final class QuestRichTextScan {
                     values.put(key, root.get(key).getAsString());
                 }
             } catch (Exception ignored) {
-                // non-fatal
+                
             }
         }
         return values;

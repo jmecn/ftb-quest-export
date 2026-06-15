@@ -21,7 +21,6 @@ public final class QuestExportConstants {
     public static final String EXPORT_LANGUAGES_PROPERTY = "quest.exportLanguages";
     public static final String FALLBACK_LOCALE = "en_us";
 
-    // —— Asset export ——
     public static final String EXPORT_EXCLUDED_NAMESPACES_PROPERTY = "quest-export.exportExcludedNamespaces";
     public static final Set<String> DEFAULT_EXCLUDED_NAMESPACES = Set.of("additionalplacements");
 
@@ -42,9 +41,8 @@ public final class QuestExportConstants {
     public static final String CHAPTER_IMAGES_REL_ROOT = "assets/chapter-images";
     public static final int CHAPTER_IMAGE_MIN_FRAME_PX = 16;
 
-    /** Fallback when native icon size cannot be resolved (vanilla default pack). */
     public static final int ITEM_FLUID_ATLAS_PX = 16;
-    /** Task/reward row icons in quest detail (QuestBook-React default). */
+    public static final int BLOCK_ITEM_MIN_ATLAS_PX = 32;
     public static final int DETAIL_ITEM_ICON_PX = 32;
     public static final int[] ICON_TIERS = {16, 32, 64, 128};
     public static final int ATLAS_MAX_WIDTH_PX = 2048;

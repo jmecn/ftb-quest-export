@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-/**
- * Precomputes {@code search-index/<locale>.json} for quest substring search in QuestBook-React.
- */
 public final class QuestSearchIndexExporter {
 
     private QuestSearchIndexExporter() {}

@@ -86,7 +86,6 @@ public final class QuestIconDisplayWriter {
         return link.withIconDisplay(buildIconDisplay(outer, inner, refs, fluidIds, client));
     }
 
-    /** Sidebar / home chapter tile; sprite lives in {@code index.json#globalAtlas}. */
     public static IconDisplay buildChapterSummaryIconDisplay(String spriteId) {
         int px = QuestExportConstants.DETAIL_ITEM_ICON_PX;
         return new IconDisplay(spriteId, px, px, null);

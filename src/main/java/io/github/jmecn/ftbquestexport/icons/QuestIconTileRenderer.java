@@ -22,19 +22,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Set;
 
-/**
- * Renders one quest icon atlas cell into a reused {@link OffScreenRenderer}.
- * {@link net.minecraft.world.item.BlockItem}: {@code renderItem} at display-driven {@code packTierPx}. Other icons
- * raster at resource-pack native size (no display upscaling).
- */
 public final class QuestIconTileRenderer {
 
     private QuestIconTileRenderer() {}
 
-    /**
-     * @return {@code true} when GL pixels were captured; {@code false} → caller should use
-     *         {@link MissingIconRenderer#create(int)}.
-     */
     public static boolean captureTile(
             Minecraft client,
             GuiGraphics guiGraphics,

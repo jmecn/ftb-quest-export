@@ -4,11 +4,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-/**
- * Lang keys to merge into {@code lang/<locale>.json} for quest-referenced items/fluids.
- * GT material / tagprefix resolution for display names is done in QuestBook
- * ({@code gtceu-composed-registry.ts}), not at export time.
- */
 public final class QuestLangKeys {
 
     private static final String GTCEU = "gtceu";
@@ -89,7 +84,6 @@ public final class QuestLangKeys {
             Map.entry("hv_screwdriver", "hv_%s_screwdriver"),
             Map.entry("iv_screwdriver", "iv_%s_screwdriver"));
 
-    /** gtmutils UtilToolType — lang keys are {@code item.gtceu.tool.<name>} (see assets/gtmutils/lang). */
     private static final java.util.List<String> GTMUTILS_ELECTRIC_TOOL_NAMES = java.util.List.of(
             "mv_screwdriver", "ev_screwdriver", "luv_screwdriver", "zpm_screwdriver",
             "mv_chainsaw", "ev_chainsaw", "luv_chainsaw", "zpm_chainsaw",
@@ -134,12 +128,10 @@ public final class QuestLangKeys {
         addComposedMaterialFluidKeys(into, registryId);
     }
 
-    /** Observation / chapter-image block refs — {@code block.*} plus item/fluid fallbacks. */
     public static void addForBlock(Set<String> into, String registryId) {
         addLookupKeys(into, RegistryLangKeys.itemLookupKeys(registryId));
     }
 
-    /** Observation entity refs — {@code entity.*}. */
     public static void addForEntity(Set<String> into, String registryId) {
         String dotted = RegistryLangKeys.dottedRegistryId(registryId);
         if (!dotted.isEmpty()) {
@@ -299,7 +291,6 @@ public final class QuestLangKeys {
         return null;
     }
 
-    /** Merge seed lang keys with item/fluid registry lookups. */
     public static Set<String> mergeItemFluidLangKeys(
             Set<String> seedLangKeys, Set<String> itemIds, Set<String> fluidIds) {
         Set<String> merged = new TreeSet<>(seedLangKeys == null ? Set.of() : seedLangKeys);
@@ -328,7 +319,6 @@ public final class QuestLangKeys {
         return Set.copyOf(merged);
     }
 
-    /** {@code tag.item.*} / {@code tag.block.*} / {@code tag.fluid.*} lang keys. */
     public static void addForTag(Set<String> into, String tagId) {
         if (tagId == null || tagId.isBlank()) {
             return;

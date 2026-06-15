@@ -14,10 +14,6 @@ import org.lwjgl.opengl.GL12;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Off-screen GL capture, aligned with {@code minecraft-web-export} {@code OffScreenRenderer}:
- * draw into a fixed framebuffer, then {@link #copyPixelsTo} or {@link #copyPixels}.
- */
 public final class OffScreenRenderer implements AutoCloseable {
 
     static final int ITEM_LOGICAL_PX = 16;
@@ -66,7 +62,6 @@ public final class OffScreenRenderer implements AutoCloseable {
         nativeImage.writeToFile(path);
     }
 
-    /** Returns a copy of the last {@link #capture} result. */
     public NativeImage copyPixels() {
         return copyImage(nativeImage);
     }
@@ -107,14 +102,12 @@ public final class OffScreenRenderer implements AutoCloseable {
         }
     }
 
-    /** Flat GUI / fluid / FTB {@code Icon.draw} — ortho matches framebuffer size. */
     public void setupFlatGuiRendering() {
         setupOrtho(width, height);
         Lighting.setupForFlatItems();
         FogRenderer.setupNoFog();
     }
 
-    /** Item stack rendering — 16×16 logical slot, scaled via pose in the caller. */
     public void setupItemRendering() {
         setupOrtho(ITEM_LOGICAL_PX, ITEM_LOGICAL_PX);
         Lighting.setupFor3DItems();

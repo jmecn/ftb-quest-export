@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/** Writes {@code items/index.json} from quest scan (registry ids referenced by tasks/rewards). */
 public final class QuestItemsIndexExporter {
 
     private QuestItemsIndexExporter() {}
@@ -56,7 +55,6 @@ public final class QuestItemsIndexExporter {
         return new ItemsIndexExportResult(itemRefs, fluids.size(), json.length());
     }
 
-    /** Registry ids listed in {@code items/index.json} (all namespaces). */
     public static Set<String> readIndexedItemIds(Path outputDir) throws IOException {
         Path indexPath = outputDir.resolve(QuestExportConstants.ITEMS_INDEX_FILE);
         if (!Files.isRegularFile(indexPath)) {

@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-/** Aggregated refs from {@link QuestFileScanner}. */
 public final class QuestScanResult {
 
     private int chapterCount;

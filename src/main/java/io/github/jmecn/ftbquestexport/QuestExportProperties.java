@@ -1,6 +1,5 @@
 package io.github.jmecn.ftbquestexport;
 
-/** In-game and CI export toggles ({@code -Dquest.export.*}). */
 public final class QuestExportProperties {
 
     private QuestExportProperties() {}

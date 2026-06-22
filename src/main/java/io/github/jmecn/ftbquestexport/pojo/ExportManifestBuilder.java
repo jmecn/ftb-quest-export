@@ -19,6 +19,7 @@ public final class ExportManifestBuilder {
     private ItemsIndexExportResult itemsIndex;
     private LangExportResult lang;
     private ItemNameKeysExportResult itemNameKeys;
+    private ItemsLangExportResult itemsLang;
     private SearchIndexManifestSection searchIndex;
     private AssetExportManifestSection resources;
     private String resourceExportError;
@@ -99,6 +100,11 @@ public final class ExportManifestBuilder {
         return this;
     }
 
+    public ExportManifestBuilder itemsLang(ItemsLangExportResult value) {
+        this.itemsLang = value;
+        return this;
+    }
+
     public ExportManifestBuilder searchIndex(SearchIndexManifestSection value) {
         this.searchIndex = value;
         return this;
@@ -136,6 +142,7 @@ public final class ExportManifestBuilder {
                 itemsIndex,
                 lang,
                 itemNameKeys,
+                itemsLang,
                 searchIndex,
                 resources,
                 resourceExportError,

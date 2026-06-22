@@ -58,6 +58,9 @@ public final class QuestExportConstants {
 
     public static final String ITEM_NAME_KEYS_FILE = "items/name-keys.json";
     public static final String ITEMS_INDEX_FILE = "items/index.json";
+    public static final String ITEMS_LANG_DIR = "items-lang";
+    public static final int ITEMS_LANG_SCHEMA = 2;
+    public static final String LOG_PREFIX_ITEMS_LANG = "[items-lang]";
     public static final String FLUID_REGISTRY_IDS_KEY = "fluidRegistryIds";
 
     private QuestExportConstants() {}

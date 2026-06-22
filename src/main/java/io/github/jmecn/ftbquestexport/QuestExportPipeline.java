@@ -10,6 +10,7 @@ import io.github.jmecn.ftbquestexport.assets.QuestItemNameKeysExporter;
 import io.github.jmecn.ftbquestexport.assets.QuestItemsIndexExporter;
 import io.github.jmecn.ftbquestexport.lang.QuestLangKeys;
 import io.github.jmecn.ftbquestexport.lang.LangMergerExporter;
+import io.github.jmecn.ftbquestexport.lang.QuestItemsLangExporter;
 import io.github.jmecn.ftbquestexport.lang.QuestSearchIndexExporter;
 import io.github.jmecn.ftbquestexport.model.ChapterData;
 import io.github.jmecn.ftbquestexport.pojo.AssetExportManifestSection;
@@ -23,6 +24,7 @@ import io.github.jmecn.ftbquestexport.pojo.ExportMetaAssets;
 import io.github.jmecn.ftbquestexport.pojo.ExportMetaExtras;
 import io.github.jmecn.ftbquestexport.pojo.FluidExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ItemNameKeysExportResult;
+import io.github.jmecn.ftbquestexport.pojo.ItemsLangExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ItemsIndexExportResult;
 import io.github.jmecn.ftbquestexport.pojo.LangExportResult;
 import io.github.jmecn.ftbquestexport.pojo.ManifestExportSize;
@@ -172,6 +174,15 @@ public final class QuestExportPipeline {
                 manifest.itemNameKeys(nameKeys);
             } catch (IOException e) {
                 FtbQuestExportMod.LOGGER.error("item name-keys export failed", e);
+            }
+        }
+
+        if (scan != null) {
+            try {
+                ItemsLangExportResult itemsLang = QuestItemsLangExporter.export(outputDir, scan);
+                manifest.itemsLang(itemsLang);
+            } catch (IOException e) {
+                FtbQuestExportMod.LOGGER.error("items-lang export failed", e);
             }
         }
 

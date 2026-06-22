@@ -18,6 +18,7 @@ public record ExportManifest(
         ItemsIndexExportResult itemsIndex,
         LangExportResult lang,
         ItemNameKeysExportResult itemNameKeys,
+        ItemsLangExportResult itemsLang,
         SearchIndexManifestSection searchIndex,
         AssetExportManifestSection resources,
         String resourceExportError,
